@@ -12,7 +12,7 @@ function App() {
 
   useEffect(() => {
     // Carica il file JSON
-    fetch('/shopping-list.json')
+    fetch(`${import.meta.env.BASE_URL}shopping-list.json`)
       .then(response => response.json())
       .then(data => {
         setCategories(data.categories)
