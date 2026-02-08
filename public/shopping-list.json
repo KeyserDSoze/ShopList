@@ -1,0 +1,120 @@
+{
+  "categories": [
+    {
+      "id": "ortofrutta",
+      "name": "🥦 ORTOFRUTTA",
+      "emoji": "🥦",
+      "items": [
+        { "id": "1", "name": "Banane", "quantity": "100 g" },
+        { "id": "2", "name": "Broccoletti", "quantity": "200 g" },
+        { "id": "3", "name": "Cicoria", "quantity": "150 g" },
+        { "id": "4", "name": "Lattuga", "quantity": "80 g" },
+        { "id": "5", "name": "Mele", "quantity": "150 g" },
+        { "id": "6", "name": "Misto di verdure crude", "quantity": "200 g" },
+        { "id": "7", "name": "Misto di verdure cotte", "quantity": "350 g" },
+        { "id": "8", "name": "Valeriana", "quantity": "80 g" }
+      ]
+    },
+    {
+      "id": "macelleria",
+      "name": "🥩 MACELLERIA / GASTRONOMIA CARNE",
+      "emoji": "🥩",
+      "items": [
+        { "id": "9", "name": "Hamburger di manzo", "quantity": "200 g" },
+        { "id": "10", "name": "Bistecca di maiale", "quantity": "200 g" },
+        { "id": "11", "name": "Petto di pollo", "quantity": "700 g" },
+        { "id": "12", "name": "Prosciutto cotto", "quantity": "q.b., a scelta" }
+      ]
+    },
+    {
+      "id": "pescheria",
+      "name": "🐟 PESCHERIA",
+      "emoji": "🐟",
+      "items": [
+        { "id": "13", "name": "Merluzzo o nasello", "quantity": "250 g" },
+        { "id": "14", "name": "Orata", "quantity": "250 g" },
+        { "id": "15", "name": "Salmone fresco", "quantity": "200 g" }
+      ]
+    },
+    {
+      "id": "frigo",
+      "name": "🥓 BANCO FRIGO / SALUMI & FORMAGGI",
+      "emoji": "🥓",
+      "items": [
+        { "id": "16", "name": "Mozzarella delattosata", "quantity": "80 g" },
+        { "id": "17", "name": "Ricotta di vacca delattosata", "quantity": "160 g" },
+        { "id": "18", "name": "Yogurt delattosato parz. scremato", "quantity": "250 g" },
+        { "id": "19", "name": "Salmone affumicato", "quantity": "80 g" }
+      ]
+    },
+    {
+      "id": "pane",
+      "name": "🍞 PANE, CEREALI & SOSTITUTI",
+      "emoji": "🍞",
+      "items": [
+        { "id": "20", "name": "Pane di grano duro", "quantity": "350 g" },
+        { "id": "21", "name": "Fiocchi d'avena", "quantity": "60 g" },
+        { "id": "22", "name": "Grano saraceno", "quantity": "50 g" }
+      ]
+    },
+    {
+      "id": "pasta",
+      "name": "🍝 PASTA, RISO & LEGUMI SECCHI",
+      "emoji": "🍝",
+      "items": [
+        { "id": "23", "name": "Ceci secchi", "quantity": "50 g" },
+        { "id": "24", "name": "Lenticchie secche", "quantity": "60 g" }
+      ]
+    },
+    {
+      "id": "frutta-secca",
+      "name": "🥜 FRUTTA SECCA, SEMI & CREME",
+      "emoji": "🥜",
+      "items": [
+        { "id": "25", "name": "Mandorle", "quantity": "20 g" },
+        { "id": "26", "name": "Noci pecan", "quantity": "20 g" },
+        { "id": "27", "name": "Pinoli", "quantity": "30 g" },
+        { "id": "28", "name": "Semi di chia", "quantity": "20 g" },
+        { "id": "29", "name": "Crema di mandorle", "quantity": "40 g" },
+        { "id": "30", "name": "Burro di arachidi a ridotto contenuto di grassi", "quantity": "30 g" }
+      ]
+    },
+    {
+      "id": "condimenti",
+      "name": "🫒 CONDIMENTI & CONSERVE",
+      "emoji": "🫒",
+      "items": [
+        { "id": "31", "name": "Olio extravergine di oliva", "quantity": "145 g" },
+        { "id": "32", "name": "Olive nere", "quantity": "30 g" },
+        { "id": "33", "name": "Patè di olive", "quantity": "100 g" }
+      ]
+    },
+    {
+      "id": "colazione",
+      "name": "🍪 COLAZIONE & DOLCI",
+      "emoji": "🍪",
+      "items": [
+        { "id": "34", "name": "Biscotti senza glutine", "quantity": "q.b." },
+        { "id": "35", "name": "Mousse di mela e banana", "quantity": "360 g" }
+      ]
+    },
+    {
+      "id": "bevande",
+      "name": "☕ BEVANDE",
+      "emoji": "☕",
+      "items": [
+        { "id": "36", "name": "Caffè", "quantity": "50 g" }
+      ]
+    },
+    {
+      "id": "casa",
+      "name": "🧼 CASA & PULIZIA",
+      "emoji": "🧼",
+      "items": [
+        { "id": "37", "name": "Panno in microfibra", "quantity": "" },
+        { "id": "38", "name": "Detersivo in polvere", "quantity": "" },
+        { "id": "39", "name": "Spugnette per piatti", "quantity": "" }
+      ]
+    }
+  ]
+}
