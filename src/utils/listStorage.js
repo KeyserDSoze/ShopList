@@ -139,15 +139,44 @@ export const updateListStatus = (listId, status) => {
 };
 
 // Sharing functions
+
+// Base64 URL-safe: sostituisce +/= con -_ per evitare problemi nei parametri URL
+const toBase64Url = (str) => btoa(str).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+const fromBase64Url = (str) => {
+  let b64 = str.replace(/-/g, '+').replace(/_/g, '/');
+  while (b64.length % 4) b64 += '=';
+  return atob(b64);
+};
+
 export const serializeList = (list) => {
-  const data = JSON.stringify(list);
-  return btoa(unescape(encodeURIComponent(data)));
+  // Condividi solo i dati essenziali per ridurre la lunghezza dell'URL
+  const minimal = {
+    n: list.name,
+    i: list.items.map(item => {
+      const entry = { n: item.name, d: item.department };
+      if (item.quantity) entry.q = item.quantity;
+      return entry;
+    }),
+  };
+  const json = JSON.stringify(minimal);
+  return toBase64Url(unescape(encodeURIComponent(json)));
 };
 
 export const deserializeList = (encodedData) => {
   try {
-    const data = decodeURIComponent(escape(atob(encodedData)));
-    return JSON.parse(data);
+    const json = decodeURIComponent(escape(fromBase64Url(encodedData)));
+    const minimal = JSON.parse(json);
+    // Ricostruisci la struttura completa dalla versione minimale
+    return {
+      name: minimal.n,
+      items: minimal.i.map(item => ({
+        name: item.n,
+        department: item.d,
+        quantity: item.q || '',
+        checked: false,
+        fromDiet: false,
+      })),
+    };
   } catch (error) {
     console.error('Errore nel deserializzare la lista:', error);
     return null;
