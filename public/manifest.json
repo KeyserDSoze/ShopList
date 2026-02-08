@@ -1,0 +1,25 @@
+{
+  "name": "ShopList - Lista della Spesa",
+  "short_name": "ShopList",
+  "description": "Gestisci le tue liste della spesa in modo semplice e veloce",
+  "start_url": "/ShopList/",
+  "scope": "/ShopList/",
+  "display": "standalone",
+  "background_color": "#f5f5f5",
+  "theme_color": "#667eea",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
