@@ -19,11 +19,12 @@ import {
 import AddIcon from '@mui/icons-material/Add'
 import DeleteIcon from '@mui/icons-material/Delete'
 import EditIcon from '@mui/icons-material/Edit'
+import SettingsIcon from '@mui/icons-material/Settings'
 import { getAllLists, createNewList, deleteList, getListProgress } from '../utils/listStorage'
 import { formatDistanceToNow, format } from 'date-fns'
 import { it } from 'date-fns/locale'
 
-export default function HomePage({ onSelectList }) {
+export default function HomePage({ onSelectList, onOpenSettings }) {
   const [lists, setLists] = useState([])
   const [openDialog, setOpenDialog] = useState(false)
   const [newListName, setNewListName] = useState('')
@@ -104,22 +105,28 @@ export default function HomePage({ onSelectList }) {
         py: { xs: 2, sm: 3 },
       }}>
         <Box sx={{ maxWidth: 1200, mx: 'auto' }}>
-          {/* Pulsante Nuova Lista */}
-          <Button
-            variant="contained"
-            color="primary"
-            startIcon={<AddIcon />}
-            onClick={() => setOpenDialog(true)}
-            size="large"
-            sx={{ 
-              width: { xs: '100%', sm: '100%', md: 'auto' },
-              mb: 3,
-              py: 1.5,
-              fontSize: '1rem',
-            }}
-          >
-            Nuova lista
-          </Button>
+          {/* Pulsanti principali */}
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, mb: 3 }}>
+              <Button
+              variant="outlined"
+              startIcon={<SettingsIcon />}
+              onClick={onOpenSettings}
+              size="large"
+              sx={{ width: '100%', py: 1.5, fontSize: '1rem' }}
+            >
+              Impostazioni
+            </Button>
+            <Button
+              variant="contained"
+              color="primary"
+              startIcon={<AddIcon />}
+              onClick={() => setOpenDialog(true)}
+              size="large"
+              sx={{ width: '100%', py: 1.5, fontSize: '1rem' }}
+            >
+              Nuova lista
+            </Button>
+          </Box>
 
           {lists.length === 0 ? (
             <Alert severity="info">

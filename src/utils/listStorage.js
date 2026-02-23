@@ -1,204 +1,187 @@
-const STORAGE_KEY = 'shoplist_lists';
+import { LEGACY_ID_MAP, resolveCategoryId } from '../constants/categories'
+
+const STORAGE_KEY = 'shoplist_lists'
 
 /**
  * Struttura di una shopping list:
  * {
- *   id: string (timestamp)
+ *   id: string
  *   name: string
- *   createdAt: timestamp
+ *   createdAt: ISO string
  *   status: 'inPreparation' | 'readyToPurchase'
+ *   supermarketId: string | null
  *   items: [{
- *     id: string (uuid)
+ *     id: string
  *     name: string
- *     department: string (enum id)
+ *     categoryId: number | string  (number = built-in, "cat-xxx" = custom)
  *     quantity: string
  *     checked: boolean
- *     fromDiet: boolean
  *   }]
  * }
+ *
+ * Backward compat: vecchi item con campo `department` vengono migrati
+ * automaticamente a `categoryId` tramite LEGACY_ID_MAP.
  */
 
-export const generateId = () => {
-  return Math.random().toString(36).substring(2, 11) + Date.now().toString(36);
-};
+export const generateId = () =>
+  Math.random().toString(36).substring(2, 11) + Date.now().toString(36)
+
+/** Migra un item legacy (con `department`) al nuovo formato `categoryId` */
+const migrateItem = (item) => {
+  if (item.categoryId !== undefined) return item
+  const categoryId = LEGACY_ID_MAP[item.department] || 17
+  const { department: _d, fromDiet: _f, ...rest } = item
+  return { ...rest, categoryId }
+}
 
 export const getAllLists = () => {
   try {
-    const data = localStorage.getItem(STORAGE_KEY);
-    return data ? JSON.parse(data) : [];
-  } catch (error) {
-    console.error('Errore nel caricamento delle liste:', error);
-    return [];
+    const data = localStorage.getItem(STORAGE_KEY)
+    const lists = data ? JSON.parse(data) : []
+    // Migra eventuali liste con il vecchio formato
+    return lists.map(list => ({
+      ...list,
+      supermarketId: list.supermarketId || null,
+      items: (list.items || []).map(migrateItem),
+    }))
+  } catch {
+    return []
   }
-};
+}
 
 export const saveList = (list) => {
   try {
-    const lists = getAllLists();
-    const index = lists.findIndex(l => l.id === list.id);
-    if (index > -1) {
-      lists[index] = list;
-    } else {
-      lists.push(list);
-    }
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(lists));
-    return list;
-  } catch (error) {
-    console.error('Errore nel salvataggio della lista:', error);
-    return null;
+    const lists = getAllLists()
+    const index = lists.findIndex(l => l.id === list.id)
+    if (index > -1) lists[index] = list
+    else lists.push(list)
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(lists))
+    return list
+  } catch {
+    return null
   }
-};
+}
 
 export const deleteList = (listId) => {
   try {
-    const lists = getAllLists();
-    const filtered = lists.filter(l => l.id !== listId);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(filtered));
-    return true;
-  } catch (error) {
-    console.error('Errore nella cancellazione della lista:', error);
-    return false;
+    const lists = getAllLists().filter(l => l.id !== listId)
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(lists))
+    return true
+  } catch {
+    return false
   }
-};
+}
 
-export const getListById = (listId) => {
-  const lists = getAllLists();
-  return lists.find(l => l.id === listId);
-};
+export const getListById = (listId) => getAllLists().find(l => l.id === listId) || null
 
-export const createNewList = (name) => {
+/**
+ * Crea una nuova lista.
+ * @param {string} name
+ * @param {Array} defaultItems - array di { name, categoryId, quantity } (dalla lista di default)
+ */
+export const createNewList = (name, defaultItems = []) => {
   const newList = {
     id: generateId(),
     name,
     createdAt: new Date().toISOString(),
     status: 'inPreparation',
-    items: [],
-  };
-  return saveList(newList);
-};
+    supermarketId: null,
+    items: defaultItems.map(item => ({
+      id: generateId(),
+      name: item.name,
+      categoryId: resolveCategoryId(item.categoryId),
+      quantity: item.quantity || '',
+      checked: false,
+    })),
+  }
+  return saveList(newList)
+}
 
 export const addItemToList = (listId, item) => {
-  const list = getListById(listId);
-  if (!list) return null;
-  
+  const list = getListById(listId)
+  if (!list) return null
   const newItem = {
     id: generateId(),
-    ...item,
+    name: item.name,
+    categoryId: resolveCategoryId(item.categoryId || item.department || 17),
+    quantity: item.quantity || '',
     checked: false,
-    fromDiet: item.fromDiet || false,
-  };
-  
-  list.items.push(newItem);
-  return saveList(list);
-};
+  }
+  list.items.push(newItem)
+  return saveList(list)
+}
 
 export const removeItemFromList = (listId, itemId) => {
-  const list = getListById(listId);
-  if (!list) return null;
-  
-  list.items = list.items.filter(item => item.id !== itemId);
-  return saveList(list);
-};
+  const list = getListById(listId)
+  if (!list) return null
+  list.items = list.items.filter(item => item.id !== itemId)
+  return saveList(list)
+}
 
 export const toggleItemCheck = (listId, itemId) => {
-  const list = getListById(listId);
-  if (!list) return null;
-  
-  const item = list.items.find(i => i.id === itemId);
-  if (item) {
-    item.checked = !item.checked;
-  }
-  
-  return saveList(list);
-};
-
-export const updateItemInList = (listId, itemId, updates) => {
-  const list = getListById(listId);
-  if (!list) return null;
-  
-  const item = list.items.find(i => i.id === itemId);
-  if (item) {
-    Object.assign(item, updates);
-  }
-  
-  return saveList(list);
-};
+  const list = getListById(listId)
+  if (!list) return null
+  const item = list.items.find(i => i.id === itemId)
+  if (item) item.checked = !item.checked
+  return saveList(list)
+}
 
 export const getListProgress = (list) => {
-  if (!list || list.items.length === 0) return 0;
-  const checked = list.items.filter(item => item.checked).length;
-  return Math.round((checked / list.items.length) * 100);
-};
+  if (!list || list.items.length === 0) return 0
+  const checked = list.items.filter(item => item.checked).length
+  return Math.round((checked / list.items.length) * 100)
+}
 
 export const updateListStatus = (listId, status) => {
-  const list = getListById(listId);
-  if (!list) return null;
-  
-  list.status = status;
-  return saveList(list);
-};
+  const list = getListById(listId)
+  if (!list) return null
+  list.status = status
+  return saveList(list)
+}
 
-// Sharing functions
+export const setListSupermarket = (listId, supermarketId) => {
+  const list = getListById(listId)
+  if (!list) return null
+  list.supermarketId = supermarketId
+  return saveList(list)
+}
 
-// Base64 URL-safe: sostituisce +/= con -_ per evitare problemi nei parametri URL
-const toBase64Url = (str) => btoa(str).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+// ─── Sharing ────────────────────────────────────────────────────────────────
+
+const toBase64Url = (str) => btoa(str).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
 const fromBase64Url = (str) => {
-  let b64 = str.replace(/-/g, '+').replace(/_/g, '/');
-  while (b64.length % 4) b64 += '=';
-  return atob(b64);
-};
+  let b64 = str.replace(/-/g, '+').replace(/_/g, '/')
+  while (b64.length % 4) b64 += '='
+  return atob(b64)
+}
 
 export const serializeList = (list) => {
-  // Condividi solo i dati essenziali per ridurre la lunghezza dell'URL
   const minimal = {
     n: list.name,
     i: list.items.map(item => {
-      const entry = { n: item.name, d: item.department };
-      if (item.quantity) entry.q = item.quantity;
-      return entry;
+      const entry = { n: item.name, c: item.categoryId }
+      if (item.quantity) entry.q = item.quantity
+      return entry
     }),
-  };
-  const json = JSON.stringify(minimal);
-  return toBase64Url(unescape(encodeURIComponent(json)));
-};
+  }
+  return toBase64Url(unescape(encodeURIComponent(JSON.stringify(minimal))))
+}
 
 export const deserializeList = (encodedData) => {
   try {
-    const json = decodeURIComponent(escape(fromBase64Url(encodedData)));
-    const minimal = JSON.parse(json);
-    // Ricostruisci la struttura completa dalla versione minimale
+    const json = decodeURIComponent(escape(fromBase64Url(encodedData)))
+    const minimal = JSON.parse(json)
     return {
       name: minimal.n,
       items: minimal.i.map(item => ({
         name: item.n,
-        department: item.d,
+        categoryId: resolveCategoryId(item.c ?? item.d), // compat vecchio formato con 'd'
         quantity: item.q || '',
         checked: false,
-        fromDiet: false,
       })),
-    };
-  } catch (error) {
-    console.error('Errore nel deserializzare la lista:', error);
-    return null;
+    }
+  } catch {
+    return null
   }
-};
+}
 
-export const importSharedList = (encodedList, newName) => {
-  const list = deserializeList(encodedList);
-  if (!list) return null;
-  
-  // Crea una nuova lista con il nome fornito
-  const importedList = {
-    id: generateId(),
-    name: newName,
-    createdAt: new Date().toISOString(),
-    status: 'inPreparation',
-    items: list.items.map(item => ({
-      ...item,
-      id: generateId(),
-      checked: false,
-    })),
-  };
-  
-  return saveList(importedList);
-};

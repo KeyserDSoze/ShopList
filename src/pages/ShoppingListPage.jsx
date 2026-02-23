@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+﻿import { useState, useEffect } from 'react'
 import {
   Box,
   Typography,
@@ -24,139 +24,133 @@ import DeleteIcon from '@mui/icons-material/Delete'
 import ShareIcon from '@mui/icons-material/Share'
 import CheckCircleIcon from '@mui/icons-material/CheckCircle'
 import { getListById, toggleItemCheck, removeItemFromList, addItemToList, getListProgress, updateListStatus, serializeList } from '../utils/listStorage'
-import { DEPARTMENTS, getDepartmentName } from '../constants/departments'
+import { BUILTIN_CATEGORIES, getCategoryName } from '../constants/categories'
+import { getCustomCategories } from '../utils/categoryStorage'
+import { getAllSupermarkets } from '../utils/supermarketStorage'
+import { getDefaultItems } from '../utils/defaultListStorage'
 import PurchasableItems from '../components/DietSelector'
 
 export default function ShoppingListPage({ listId, onBack }) {
   const [list, setList] = useState(null)
   const [loading, setLoading] = useState(true)
   const [openAddDialog, setOpenAddDialog] = useState(false)
-  const [newItem, setNewItem] = useState({ name: '', department: 'produce', quantity: '' })
+  const [newItem, setNewItem] = useState({ name: '', categoryId: 1, quantity: '' })
   const [dietItems, setDietItems] = useState([])
   const [purchasableItems, setPurchasableItems] = useState([])
   const [shareUrl, setShareUrl] = useState('')
   const [openShareDialog, setOpenShareDialog] = useState(false)
   const [snackbar, setSnackbar] = useState({ open: false, message: '' })
+  const [customCategories, setCustomCategories] = useState(getCustomCategories())
+  const [supermarkets, setSupermarkets] = useState(getAllSupermarkets())
+  const [selectedSupermarketId, setSelectedSupermarketId] = useState('')
 
   useEffect(() => {
     loadList()
     loadDiet()
+    setCustomCategories(getCustomCategories())
+    setSupermarkets(getAllSupermarkets())
   }, [listId])
 
   useEffect(() => {
-    if (list && dietItems.length > 0) {
-      buildPurchasableItems()
-    }
+    if (list) buildPurchasableItems()
   }, [list, dietItems])
 
   const loadList = () => {
-    const list = getListById(listId)
-    setList(list)
+    const l = getListById(listId)
+    setList(l)
     setLoading(false)
   }
 
   const loadDiet = async () => {
     try {
-      const response = await fetch(`${import.meta.env.BASE_URL}diet.json`)
-      const data = await response.json()
-      setDietItems(data.items)
+      const items = await getDefaultItems()
+      setDietItems(items)
     } catch (error) {
-      console.error('Errore nel caricamento della dieta:', error)
+      console.error('Errore nel caricamento degli articoli di default:', error)
     }
   }
 
   const buildPurchasableItems = () => {
     if (!list) return
-
     const isReady = list.status === 'readyToPurchase'
 
-    // Mappa gli articoli della lista per lookup veloce
-    const listItemsMap = new Map(
-      list.items.map(item => [`${item.name}-${item.department}`, item])
-    )
-
-    // In preparazione: mostra tutti (dieta + custom), checkbox = in lista o no
-    // In acquisto: mostra solo quelli in lista, checkbox = preso o no
     if (isReady) {
-      // Modalità acquisto: mostra solo articoli in lista
-      const items = list.items.map(item => ({
-        ...item,
-        id: item.id,
-        checked: item.checked, // "preso" al supermercato
-      }))
-      setPurchasableItems(items)
+      setPurchasableItems(list.items)
     } else {
-      // Modalità preparazione: mostra dieta + custom
+      const listItemsMap = new Map(list.items.map(item => [item.name.toLowerCase(), item]))
       const merged = [
-        ...dietItems.map(item => {
-          const listItem = listItemsMap.get(`${item.name}-${item.department}`)
-          return {
-            ...item,
-            id: `diet-${item.name}-${item.department}`,
-            checked: !!listItem, // selezionato = è in lista
-          }
-        }),
-        // Custom items (non nella dieta) che sono già nella lista
+        ...dietItems.map(item => ({
+          ...item,
+          id: `diet-${item.name}`,
+          checked: listItemsMap.has(item.name.toLowerCase()),
+        })),
+        // Custom items in list but not from default diet
         ...list.items
-          .filter(item => !dietItems.some(d => d.name === item.name && d.department === item.department))
-          .map(item => ({
-            ...item,
-            checked: true,
-          })),
+          .filter(item => !dietItems.some(d => d.name.toLowerCase() === item.name.toLowerCase()))
+          .map(item => ({ ...item, checked: true })),
       ]
       setPurchasableItems(merged)
     }
   }
 
-  const handleTogglePurchasable = (itemId, department, name) => {
-    // Cerca l'articolo nei purchasableItems
-    const purchasable = purchasableItems.find(
-      item => item.id === itemId || (item.name === name && item.department === department)
-    )
+  // Filter and sort by selected supermarket
+  const visibleItems = (() => {
+    if (!selectedSupermarketId) return purchasableItems
+    const sm = supermarkets.find(s => s.id === selectedSupermarketId)
+    if (!sm || !sm.categoryOrder?.length) return purchasableItems
+    const order = sm.categoryOrder
+    const filtered = purchasableItems.filter(item => {
+      const catId = item.categoryId
+      return order.includes(catId) || order.includes(+catId)
+    })
+    filtered.sort((a, b) => {
+      const catA = a.categoryId
+      const catB = b.categoryId
+      const idxA = order.findIndex(id => id === catA || +id === catA || id === +catA)
+      const idxB = order.findIndex(id => id === catB || +id === catB || id === +catB)
+      if (idxA === -1) return 1
+      if (idxB === -1) return -1
+      return idxA - idxB
+    })
+    return filtered
+  })()
 
+  const handleTogglePurchasable = (itemId) => {
+    const purchasable = purchasableItems.find(item => item.id === itemId)
     if (!purchasable) return
 
-    // Controlla se è già nella lista
-    const inList = list.items.some(item => item.name === name && item.department === department)
+    const inList = list.items.some(item => item.name.toLowerCase() === purchasable.name.toLowerCase())
 
     if (inList) {
-      // Rimuovi dalla lista
-      const itemToRemove = list.items.find(item => item.name === name && item.department === department)
+      const itemToRemove = list.items.find(item => item.name.toLowerCase() === purchasable.name.toLowerCase())
       if (itemToRemove) {
         const updated = removeItemFromList(listId, itemToRemove.id)
-        if (updated) {
-          setList(updated)
-        }
+        if (updated) setList(updated)
       }
     } else {
-      // Aggiungi alla lista
       const updated = addItemToList(listId, {
-        name,
-        department,
+        name: purchasable.name,
+        categoryId: purchasable.categoryId,
         quantity: purchasable.quantity || '',
       })
-      if (updated) {
-        setList(updated)
-      }
+      if (updated) setList(updated)
     }
   }
 
   const handleTogglePrepared = (itemId) => {
     const updated = toggleItemCheck(listId, itemId)
-    if (updated) {
-      setList(updated)
-    }
+    if (updated) setList(updated)
   }
 
   const handleAddCustomItem = () => {
-    if (!newItem.name.trim() || !newItem.department) {
-      alert('Nome e reparto sono obbligatori')
+    if (!newItem.name.trim()) {
+      alert('Il nome è obbligatorio')
       return
     }
     const updated = addItemToList(listId, newItem)
     if (updated) {
       setList(updated)
-      setNewItem({ name: '', department: 'produce', quantity: '' })
+      setNewItem({ name: '', categoryId: 1, quantity: '' })
       setOpenAddDialog(false)
     }
   }
@@ -165,18 +159,16 @@ export default function ShoppingListPage({ listId, onBack }) {
     const updated = updateListStatus(listId, 'readyToPurchase')
     if (updated) {
       setList(updated)
-      setSnackbar({ open: true, message: 'Lista confermata! Ora è pronta per l\'acquisto' })
+      setSnackbar({ open: true, message: "Lista confermata! Ora è pronta per l'acquisto" })
     }
   }
 
   const handleShare = () => {
     if (!list) return
-
     const encoded = serializeList(list)
     const params = new URLSearchParams()
     params.set('share', encoded)
     const url = `${window.location.origin}${import.meta.env.BASE_URL}?${params.toString()}`
-
     setShareUrl(url)
     setOpenShareDialog(true)
   }
@@ -184,9 +176,7 @@ export default function ShoppingListPage({ listId, onBack }) {
   const handleCopyShare = async () => {
     try {
       await navigator.clipboard.writeText(shareUrl)
-      setSnackbar({ open: true, message: 'Link copiato negli appunti!' })
     } catch {
-      // Fallback per contesti non sicuri (HTTP)
       const textarea = document.createElement('textarea')
       textarea.value = shareUrl
       textarea.style.position = 'fixed'
@@ -195,21 +185,23 @@ export default function ShoppingListPage({ listId, onBack }) {
       textarea.select()
       document.execCommand('copy')
       document.body.removeChild(textarea)
-      setSnackbar({ open: true, message: 'Link copiato negli appunti!' })
     }
+    setSnackbar({ open: true, message: 'Link copiato negli appunti!' })
   }
 
   if (loading || !list) {
-    return (
-      <Box sx={{ width: '100%', p: 4 }}>
-        <LinearProgress />
-      </Box>
-    )
+    return <Box sx={{ width: '100%', p: 4 }}><LinearProgress /></Box>
   }
 
   const progress = getListProgress(list)
   const isReadyToPurchase = list.status === 'readyToPurchase'
   const isInPreparation = list.status === 'inPreparation'
+
+  // All categories for the select
+  const allCategories = [
+    ...BUILTIN_CATEGORIES.map(c => ({ id: c.id, label: getCategoryName(c.id, [], 'it') })),
+    ...customCategories.map(c => ({ id: c.id, label: `${c.emoji} ${c.name}` })),
+  ]
 
   return (
     <Box sx={{ width: '100%', minHeight: '100vh', bgcolor: '#f5f5f5' }}>
@@ -261,56 +253,52 @@ export default function ShoppingListPage({ listId, onBack }) {
           )}
 
           {/* Pulsanti azioni */}
-          <Box sx={{ mb: 3, display: 'flex', gap: 1.5, flexWrap: 'wrap' }}>
+          <Box sx={{ mb: 2, display: 'flex', gap: 1.5, flexWrap: 'wrap' }}>
             {isInPreparation && (
               <>
-                <Button
-                  variant="contained"
-                  color="primary"
-                  startIcon={<AddIcon />}
-                  onClick={() => setOpenAddDialog(true)}
-                  size="medium"
-                >
+                <Button variant="contained" color="primary" startIcon={<AddIcon />}
+                  onClick={() => setOpenAddDialog(true)} size="medium">
                   Aggiungi articolo
                 </Button>
-                <Button
-                  variant="contained"
-                  color="success"
-                  startIcon={<CheckCircleIcon />}
-                  onClick={handleConfirmList}
-                  size="medium"
-                >
+                <Button variant="contained" color="success" startIcon={<CheckCircleIcon />}
+                  onClick={handleConfirmList} size="medium">
                   Conferma lista
                 </Button>
               </>
             )}
-            <Button
-              variant="outlined"
-              startIcon={<ShareIcon />}
-              onClick={handleShare}
-              size="medium"
-            >
+            <Button variant="outlined" startIcon={<ShareIcon />} onClick={handleShare} size="medium">
               Condividi
             </Button>
           </Box>
 
-          {/* Unica vista: Articoli acquistabili */}
-          {purchasableItems.length > 0 && (
+          {/* Selettore supermercato */}
+          {supermarkets.length > 0 && (
+            <FormControl size="small" sx={{ mb: 2, minWidth: 220 }}>
+              <InputLabel>🏪 Supermercato</InputLabel>
+              <Select value={selectedSupermarketId} label="🏪 Supermercato"
+                onChange={e => setSelectedSupermarketId(e.target.value)}>
+                <MenuItem value=""><em>Tutti i reparti</em></MenuItem>
+                {supermarkets.map(sm => (
+                  <MenuItem key={sm.id} value={sm.id}>{sm.name}</MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          )}
+
+          {/* Articoli */}
+          {visibleItems.length > 0 && (
             <PurchasableItems
-              items={purchasableItems}
+              items={visibleItems}
+              customCategories={customCategories}
               onToggleItem={(itemId) => {
-                const item = purchasableItems.find(p => p.id === itemId)
-                if (item) {
-                  if (isReadyToPurchase) {
-                    // In modalità acquisto, toggle "preso"
-                    const listItem = list.items.find(i => i.name === item.name && i.department === item.department)
-                    if (listItem) {
-                      handleTogglePrepared(listItem.id)
-                    }
-                  } else {
-                    // In preparazione, toggle aggiunta/rimozione dalla lista
-                    handleTogglePurchasable(itemId, item.department, item.name)
-                  }
+                const item = visibleItems.find(p => p.id === itemId)
+                if (!item) return
+                if (isReadyToPurchase) {
+                  // Match against list items by name
+                  const listItem = list.items.find(i => i.name.toLowerCase() === item.name.toLowerCase())
+                  if (listItem) handleTogglePrepared(listItem.id)
+                } else {
+                  handleTogglePurchasable(itemId)
                 }
               }}
               isReadyToPurchase={isReadyToPurchase}
@@ -323,42 +311,23 @@ export default function ShoppingListPage({ listId, onBack }) {
       {/* Dialog aggiungi articolo custom */}
       <Dialog open={openAddDialog} onClose={() => setOpenAddDialog(false)} maxWidth="sm" fullWidth>
         <DialogTitle>Aggiungi articolo custom</DialogTitle>
-        <DialogContent sx={{ pt: 2 }}>
-          <TextField
-            autoFocus
-            fullWidth
-            label="Nome articolo *"
-            value={newItem.name}
-            onChange={(e) => setNewItem({ ...newItem, name: e.target.value })}
-            sx={{ mb: 2 }}
-          />
-          <FormControl fullWidth sx={{ mb: 2 }}>
-            <InputLabel>Reparto *</InputLabel>
-            <Select
-              value={newItem.department}
-              label="Reparto *"
-              onChange={(e) => setNewItem({ ...newItem, department: e.target.value })}
-            >
-              {Object.values(DEPARTMENTS).map(dept => (
-                <MenuItem key={dept.id} value={dept.id}>
-                  {dept.name}
-                </MenuItem>
-              ))}
+        <DialogContent sx={{ pt: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <TextField autoFocus fullWidth label="Nome articolo *" value={newItem.name}
+            onChange={(e) => setNewItem({ ...newItem, name: e.target.value })} />
+          <FormControl fullWidth>
+            <InputLabel>Categoria *</InputLabel>
+            <Select value={newItem.categoryId} label="Categoria *"
+              onChange={(e) => setNewItem({ ...newItem, categoryId: e.target.value })}>
+              {allCategories.map(c => <MenuItem key={c.id} value={c.id}>{c.label}</MenuItem>)}
             </Select>
           </FormControl>
-          <TextField
-            fullWidth
-            label="Quantità (opzionale)"
-            value={newItem.quantity}
+          <TextField fullWidth label="Quantità (opzionale)" value={newItem.quantity}
             onChange={(e) => setNewItem({ ...newItem, quantity: e.target.value })}
-            placeholder="Es: 500 g"
-          />
+            placeholder="Es: 500 g" />
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setOpenAddDialog(false)}>Annulla</Button>
-          <Button onClick={handleAddCustomItem} variant="contained" color="primary">
-            Aggiungi
-          </Button>
+          <Button onClick={handleAddCustomItem} variant="contained" color="primary">Aggiungi</Button>
         </DialogActions>
       </Dialog>
 
@@ -369,31 +338,17 @@ export default function ShoppingListPage({ listId, onBack }) {
           <Typography variant="body2" color="textSecondary" sx={{ mb: 2 }}>
             Condividi questo link per far importare la lista a qualcun altro:
           </Typography>
-          <TextField
-            fullWidth
-            value={shareUrl}
-            InputProps={{ readOnly: true }}
-            multiline
-            rows={3}
-            variant="outlined"
-            onClick={(e) => e.target.select()}
-          />
+          <TextField fullWidth value={shareUrl} InputProps={{ readOnly: true }}
+            multiline rows={3} variant="outlined" onClick={(e) => e.target.select()} />
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setOpenShareDialog(false)}>Chiudi</Button>
-          <Button onClick={handleCopyShare} variant="contained" color="primary">
-            Copia link
-          </Button>
+          <Button onClick={handleCopyShare} variant="contained" color="primary">Copia link</Button>
         </DialogActions>
       </Dialog>
 
-      {/* Snackbar */}
-      <Snackbar
-        open={snackbar.open}
-        autoHideDuration={3000}
-        onClose={() => setSnackbar({ ...snackbar, open: false })}
-        message={snackbar.message}
-      />
+      <Snackbar open={snackbar.open} autoHideDuration={3000}
+        onClose={() => setSnackbar({ ...snackbar, open: false })} message={snackbar.message} />
     </Box>
   )
 }

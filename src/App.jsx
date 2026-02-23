@@ -1,10 +1,13 @@
 import { useState, useEffect } from 'react'
 import { ThemeProvider, createTheme } from '@mui/material/styles'
 import CssBaseline from '@mui/material/CssBaseline'
-import { Dialog, DialogTitle, DialogContent, DialogActions, Button, TextField } from '@mui/material'
+import { Dialog, DialogTitle, DialogContent, DialogActions, Button, TextField, Snackbar } from '@mui/material'
 import HomePage from './pages/HomePage'
 import ShoppingListPage from './pages/ShoppingListPage'
-import { deserializeList, importSharedList } from './utils/listStorage'
+import SettingsPage from './pages/SettingsPage'
+import { deserializeList } from './utils/listStorage'
+import { deserializeSupermarket } from './utils/supermarketStorage'
+import { importCustomCategories } from './utils/categoryStorage'
 
 const theme = createTheme({
   palette: {
@@ -18,16 +21,20 @@ const theme = createTheme({
 })
 
 function App() {
+  const [currentPage, setCurrentPage] = useState('home') // 'home' | 'list' | 'settings'
   const [currentListId, setCurrentListId] = useState(null)
   const [openImportDialog, setOpenImportDialog] = useState(false)
   const [sharedListData, setSharedListData] = useState(null)
   const [importName, setImportName] = useState('')
+  const [openSmImportDialog, setOpenSmImportDialog] = useState(false)
+  const [smImportData, setSmImportData] = useState(null)
+  const [snack, setSnack] = useState('')
 
   useEffect(() => {
-    // Controlla se c'è un parametro share nella query string
     const params = new URLSearchParams(window.location.search)
-    const shareData = params.get('share')
     
+    // Lista condivisa
+    const shareData = params.get('share')
     if (shareData) {
       const list = deserializeList(shareData)
       if (list) {
@@ -36,12 +43,25 @@ function App() {
         setOpenImportDialog(true)
       }
     }
+
+    // Supermercato condiviso
+    const smData = params.get('sm')
+    if (smData) {
+      const result = deserializeSupermarket(smData)
+      if (result) {
+        setSmImportData(result)
+        setOpenSmImportDialog(true)
+      }
+    }
   }, [])
+
+  const navigateToList = (listId) => {
+    setCurrentListId(listId)
+    setCurrentPage('list')
+  }
 
   const handleImportList = () => {
     if (!importName.trim() || !sharedListData) return
-    
-    // sharedListData è già un oggetto deserializzato, creiamo direttamente la lista
     const importedList = {
       id: Date.now().toString(36) + Math.random().toString(36).substring(2, 11),
       name: importName,
@@ -53,48 +73,83 @@ function App() {
         checked: false,
       })),
     }
-
-    // Salva direttamente nel localStorage
     const lists = JSON.parse(localStorage.getItem('shoplist_lists') || '[]')
     lists.push(importedList)
     localStorage.setItem('shoplist_lists', JSON.stringify(lists))
-
     setOpenImportDialog(false)
     setSharedListData(null)
     setImportName('')
-    setCurrentListId(importedList.id)
+    navigateToList(importedList.id)
+  }
+
+  const handleImportSupermarket = () => {
+    if (!smImportData) return
+    // Importa categorie custom embedded
+    if (smImportData.customCategories?.length) {
+      importCustomCategories(smImportData.customCategories)
+    }
+    // Salva supermercato
+    const supermarkets = JSON.parse(localStorage.getItem('shoplist_supermarkets') || '[]')
+    const sm = {
+      ...smImportData.supermarket,
+      id: 'sm-' + Date.now().toString(36),
+      createdAt: new Date().toISOString(),
+    }
+    supermarkets.push(sm)
+    localStorage.setItem('shoplist_supermarkets', JSON.stringify(supermarkets))
+    setOpenSmImportDialog(false)
+    setSmImportData(null)
+    setSnack(`Supermercato "${sm.name}" importato!`)
   }
 
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      {currentListId ? (
-        <ShoppingListPage
-          listId={currentListId}
-          onBack={() => setCurrentListId(null)}
-        />
+      {currentPage === 'list' ? (
+        <ShoppingListPage listId={currentListId} onBack={() => setCurrentPage('home')} />
+      ) : currentPage === 'settings' ? (
+        <SettingsPage onBack={() => setCurrentPage('home')} />
       ) : (
-        <HomePage onSelectList={setCurrentListId} />
+        <HomePage
+          onSelectList={(id) => navigateToList(id)}
+          onOpenSettings={() => setCurrentPage('settings')}
+        />
       )}
-      
+
+      {/* Dialog import lista */}
       <Dialog open={openImportDialog} onClose={() => setOpenImportDialog(false)} maxWidth="sm" fullWidth>
         <DialogTitle>📥 Importa lista condivisa</DialogTitle>
         <DialogContent sx={{ pt: 2 }}>
-          <TextField
-            fullWidth
-            label="Nome per la lista"
-            value={importName}
-            onChange={(e) => setImportName(e.target.value)}
-            variant="outlined"
-          />
+          <TextField fullWidth label="Nome per la lista" value={importName}
+            onChange={(e) => setImportName(e.target.value)} variant="outlined" />
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setOpenImportDialog(false)}>Annulla</Button>
-          <Button onClick={handleImportList} variant="contained" color="primary">
-            Importa
-          </Button>
+          <Button onClick={handleImportList} variant="contained" color="primary">Importa</Button>
         </DialogActions>
       </Dialog>
+
+      {/* Dialog import supermercato */}
+      <Dialog open={openSmImportDialog} onClose={() => setOpenSmImportDialog(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>🏪 Importa supermercato</DialogTitle>
+        <DialogContent sx={{ pt: 2 }}>
+          {smImportData && (
+            <>
+              <p><strong>{smImportData.supermarket?.name}</strong></p>
+              <p>{smImportData.supermarket?.categoryOrder?.length} reparti</p>
+              {smImportData.customCategories?.length > 0 && (
+                <p>Include {smImportData.customCategories.length} categorie custom</p>
+              )}
+            </>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpenSmImportDialog(false)}>Annulla</Button>
+          <Button onClick={handleImportSupermarket} variant="contained">Importa</Button>
+        </DialogActions>
+      </Dialog>
+
+      <Snackbar open={!!snack} autoHideDuration={3000} onClose={() => setSnack('')} message={snack} />
     </ThemeProvider>
   )
 }
