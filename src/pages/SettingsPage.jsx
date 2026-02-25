@@ -5,7 +5,11 @@ import {
   Dialog, DialogTitle, DialogContent, DialogActions,
   TextField, Chip, Alert, Snackbar, Divider,
   FormControl, InputLabel, Select, MenuItem, Step, Stepper, StepLabel, Collapse,
+  Switch, FormControlLabel, CircularProgress, Avatar,
 } from '@mui/material'
+import { useAuth } from '../contexts/AuthContext'
+import DrivePanel from '../components/DrivePanel'
+import SyncBadge from '../components/SyncBadge'
 import ArrowBackIcon from '@mui/icons-material/ArrowBack'
 import AddIcon from '@mui/icons-material/Add'
 import DeleteIcon from '@mui/icons-material/Delete'
@@ -717,6 +721,15 @@ function DefaultListTab({ customCategories }) {
                   <Typography variant="caption" color="text.secondary">
                     {lst.items.length} articoli
                   </Typography>
+                  <SyncBadge
+                    syncType="dl"
+                    driveType="defaultList"
+                    id={lst.id}
+                    updatedAt={lst.updatedAt}
+                    name={lst.name}
+                    getData={() => ({ data: { items: lst.items } })}
+                    sx={{ mt: 0.5 }}
+                  />
                 </Box>
                 <IconButton size="small" title={lst.isDefault ? 'Già default' : 'Imposta come default'}
                   onClick={() => !lst.isDefault && handleSetDefault(lst.id)}
@@ -1119,7 +1132,7 @@ function SupermarketsTab({ customCategories }) {
         <Alert severity="info">Nessun supermercato salvato. Creane uno!</Alert>
       )}
 
-      <List>
+          <List>
         {supermarkets.map(sm => (
           <ListItem key={sm.id} divider
             secondaryAction={
@@ -1132,7 +1145,19 @@ function SupermarketsTab({ customCategories }) {
           >
             <ListItemText
               primary={sm.name}
-              secondary={`${sm.categoryOrder.length} reparti`}
+              secondary={
+                <Box component="span" sx={{ display: 'flex', flexDirection: 'column', gap: 0.25 }}>
+                  <span>{sm.categoryOrder.length} reparti</span>
+                  <SyncBadge
+                    syncType="sm"
+                    driveType="supermarket"
+                    id={sm.id}
+                    updatedAt={sm.updatedAt}
+                    name={sm.name}
+                    getData={() => ({ data: sm })}
+                  />
+                </Box>
+              }
             />
           </ListItem>
         ))}
@@ -1153,6 +1178,174 @@ function SupermarketsTab({ customCategories }) {
 }
 
 // ─── SettingsPage principale ──────────────────────────────────────────────────
+// ─── SyncTab ──────────────────────────────────────────────────────────────────
+function SyncTab() {
+  const { user, isLoggedIn, syncStatus, syncError, autoSync, syncDelay, updateSyncSettings, login, logout, syncNow } = useAuth()
+  const [syncing, setSyncing] = useState(false)
+  const [meta,    setMeta]    = useState(() => {
+    try { return JSON.parse(localStorage.getItem('shoplist_sync_meta') || '{}') } catch { return {} }
+  })
+
+  const fmtDate = (iso) => {
+    if (!iso) return 'Mai'
+    try {
+      return new Date(iso).toLocaleString('it-IT', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+    } catch { return iso }
+  }
+
+  const handleSyncNow = async () => {
+    setSyncing(true)
+    await syncNow()
+    try { setMeta(JSON.parse(localStorage.getItem('shoplist_sync_meta') || '{}')) } catch {}
+    setSyncing(false)
+  }
+
+  const delayOptions = [
+    { value: 2000,  label: '2 secondi' },
+    { value: 5000,  label: '5 secondi' },
+    { value: 10000, label: '10 secondi' },
+    { value: 30000, label: '30 secondi' },
+    { value: 60000, label: '1 minuto' },
+  ]
+
+  if (!import.meta.env.VITE_GOOGLE_CLIENT_ID) {
+    return (
+      <Alert severity="info">
+        Google Drive non è configurato per questa installazione.
+      </Alert>
+    )
+  }
+
+  return (
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+
+      {/* Account */}
+      <Card variant="outlined">
+        <CardContent sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>Account Google</Typography>
+          {isLoggedIn ? (
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              {user?.picture
+                ? <Avatar src={user.picture} />
+                : <Avatar sx={{ bgcolor: 'primary.main' }}>{user?.name?.[0]}</Avatar>}
+              <Box sx={{ flex: 1 }}>
+                <Typography variant="body2" sx={{ fontWeight: 600 }}>{user?.name}</Typography>
+                <Typography variant="caption" color="text.secondary">{user?.email}</Typography>
+              </Box>
+              <Button variant="outlined" color="error" size="small" onClick={logout}>Disconnetti</Button>
+            </Box>
+          ) : (
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+              <Typography variant="body2" color="text.secondary">
+                Accedi con Google per sincronizzare i dati su tutti i tuoi dispositivi.
+              </Typography>
+              <Button variant="contained" onClick={() => login()} sx={{ alignSelf: 'flex-start' }}>
+                ☁️ Accedi con Google
+              </Button>
+            </Box>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Sync status + manual sync */}
+      {isLoggedIn && (
+        <Card variant="outlined">
+          <CardContent sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>Stato sincronizzazione</Typography>
+
+            <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+              {syncStatus === 'syncing' && <Chip icon={<CircularProgress size={12} />} label="Sincronizzazione…" size="small" />}
+              {syncStatus === 'ok'      && <Chip label="✅ Sincronizzato" size="small" color="success" />}
+              {syncStatus === 'error'   && <Chip label={`❌ ${syncError || 'Errore'}`} size="small" color="error" />}
+              {syncStatus === 'idle'    && <Chip label="⏳ In attesa" size="small" />}
+            </Box>
+
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 1 }}>
+              <Box>
+                <Typography variant="caption" color="text.secondary" display="block">Ultima sincronizzazione</Typography>
+                <Typography variant="body2">{fmtDate(meta.lastSync)}</Typography>
+              </Box>
+              <Button
+                variant="outlined"
+                startIcon={syncing ? <CircularProgress size={14} /> : null}
+                disabled={syncing}
+                onClick={handleSyncNow}
+              >
+                Sincronizza ora
+              </Button>
+            </Box>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Auto-sync settings */}
+      {isLoggedIn && (
+        <Card variant="outlined">
+          <CardContent sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>Sincronizzazione automatica</Typography>
+
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={autoSync}
+                  onChange={e => updateSyncSettings({ autoSync: e.target.checked })}
+                />
+              }
+              label={
+                <Box>
+                  <Typography variant="body2">Abilita sync automatico</Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    Ogni modifica viene inviata a Google Drive dopo il ritardo impostato
+                  </Typography>
+                </Box>
+              }
+            />
+
+            {autoSync && (
+              <FormControl size="small" sx={{ maxWidth: 220 }}>
+                <InputLabel>Ritardo sync</InputLabel>
+                <Select
+                  value={syncDelay}
+                  label="Ritardo sync"
+                  onChange={e => updateSyncSettings({ delayMs: e.target.value })}
+                >
+                  {delayOptions.map(o => (
+                    <MenuItem key={o.value} value={o.value}>{o.label}</MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            )}
+
+            {!autoSync && (
+              <Alert severity="info" sx={{ py: 0.5 }}>
+                Sync manuale: usa il pulsante “Sincronizza ora” oppure l’icona cloud nell’header.
+              </Alert>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* What gets synced */}
+      <Card variant="outlined">
+        <CardContent>
+          <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mb: 1 }}>Cosa viene sincronizzato</Typography>
+          {[
+            { icon: '🛒', label: 'Liste della spesa' },
+            { icon: '📋', label: 'Liste di default' },
+            { icon: '🏪', label: 'Supermercati' },
+            { icon: '🏷️', label: 'Categorie custom' },
+          ].map(item => (
+            <Typography key={item.label} variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
+              {item.icon} {item.label}
+            </Typography>
+          ))}
+        </CardContent>
+      </Card>
+
+    </Box>
+  )
+}
+
 export default function SettingsPage({ onBack }) {
   const [tab, setTab] = useState(0)
   const [customCategories, setCustomCategories] = useState(getCustomCategories())
@@ -1178,10 +1371,11 @@ export default function SettingsPage({ onBack }) {
       {/* Tabs */}
       <Box sx={{ width: '100%', bgcolor: 'white', borderBottom: 1, borderColor: 'divider' }}>
         <Box sx={{ maxWidth: 900, mx: 'auto' }}>
-          <Tabs value={tab} onChange={(_, v) => setTab(v)} variant="fullWidth">
+          <Tabs value={tab} onChange={(_, v) => setTab(v)} variant="scrollable" scrollButtons="auto">
             <Tab label="Lista default" />
             <Tab label="Categorie" />
             <Tab label="Supermercati" />
+            <Tab label="☁️ Sync" />
           </Tabs>
         </Box>
       </Box>
@@ -1191,6 +1385,7 @@ export default function SettingsPage({ onBack }) {
         {tab === 0 && <DefaultListTab customCategories={customCategories} />}
         {tab === 1 && <CategoriesTab customCategories={customCategories} onCustomCategoriesChange={setCustomCategories} />}
         {tab === 2 && <SupermarketsTab customCategories={customCategories} />}
+        {tab === 3 && <SyncTab />}
       </Box>
     </Box>
   )

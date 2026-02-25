@@ -48,13 +48,23 @@ export default function PrivacyPage({ onBack }) {
 
           <Section title="2. Dati raccolti">
             <P>
-              ShopList <strong>non raccoglie, non trasmette e non archivia dati personali su server esterni</strong>.
-              Tutta la tua attività — liste della spesa, articoli, supermercati, categorie personalizzate e liste di
-              default — viene salvata esclusivamente nel <strong>localStorage del tuo browser</strong>, sul tuo dispositivo.
+              ShopList funziona in due modalità:
             </P>
             <P>
-              Non esistono account utente, non viene richiesta registrazione e nessuna informazione viene inviata a
-              server di terze parti durante l'utilizzo normale dell'app.
+              <strong>Senza account Google</strong> — L'app non raccoglie, non trasmette e non archivia
+              dati personali su server esterni. Tutta la tua attività — liste della spesa, articoli,
+              supermercati, categorie personalizzate e liste di default — viene salvata esclusivamente
+              nel <strong>localStorage del tuo browser</strong>, sul tuo dispositivo.
+            </P>
+            <P>
+              <strong>Con account Google (opzionale)</strong> — Se scegli di collegare il tuo account
+              Google, l'app richiede un token OAuth 2.0 con i seguenti permessi:
+            </P>
+            <P>• <strong>openid / profile / email</strong> — per mostrare il tuo nome e avatar nell'interfaccia</P>
+            <P>• <strong>drive.appdata</strong> — per leggere e scrivere nella cartella privata appDataFolder di Google Drive (non visibile nel tuo Drive normale)</P>
+            <P>• <strong>drive.file</strong> — per creare file condivisi con altre persone tramite email</P>
+            <P>
+              Non vengono richiesti permessi per leggere o modificare altri file del tuo Google Drive.
             </P>
           </Section>
 
@@ -63,8 +73,7 @@ export default function PrivacyPage({ onBack }) {
           <Section title="3. localStorage e dati locali">
             <P>
               I dati salvati nel localStorage rimangono sul tuo dispositivo finché non li elimini manualmente
-              (svuotando i dati del browser o disinstallando l'app). Non vengono sincronizzati automaticamente
-              con altri dispositivi.
+              (svuotando i dati del browser o disinstallando l'app).
             </P>
             <P>
               Puoi cancellare tutti i dati dell'app in qualsiasi momento svuotando la cache del browser o accedendo
@@ -74,21 +83,52 @@ export default function PrivacyPage({ onBack }) {
 
           <Divider sx={{ my: 2 }} />
 
-          <Section title="4. Funzione di condivisione">
+          <Section title="4. Google Drive e dati cloud">
             <P>
-              La funzione "Condividi" genera un link contenente i dati della lista codificati in Base64 direttamente
-              nell'URL. Questi dati vengono trasmessi solo quando decidi attivamente di condividere il link con
-              qualcuno. Non vengono memorizzati su alcun server.
+              Se attivi la sincronizzazione con Google, i tuoi dati (liste di default, supermercati, categorie
+              personalizzate, liste della spesa) vengono caricati nella cartella <strong>appDataFolder</strong>
+              del tuo Google Drive. Tale cartella è accessibile solo a ShopList e non è visibile nel tuo
+              Google Drive normale né ad altre app.
+            </P>
+            <P>
+              I file che condividi esplicitamente con altre persone tramite email vengono creati come file
+              normali di Google Drive, accessibili solo alle persone invitate. Puoi revocare l'accesso in
+              qualsiasi momento dal pannello Drive nell'app.
+            </P>
+            <P>
+              Il token OAuth è temporaneo (durata ~1 ora) e non viene mai salvato su server ShopList.
+              Viene conservato temporaneamente in memoria durante la sessione del browser.
+              Il profilo utente (nome, email, foto) viene salvato nel localStorage per mostrarlo
+              nell'interfaccia senza richiedere un nuovo login ad ogni visita.
+            </P>
+            <P>
+              Il trattamento dei dati da parte di Google è regolato dalla
+              <strong> Google Privacy Policy</strong> (policies.google.com/privacy).
             </P>
           </Section>
 
           <Divider sx={{ my: 2 }} />
 
-          <Section title="5. Hosting e terze parti">
+          <Section title="5. Funzione di condivisione via link">
+            <P>
+              La funzione «Condividi link» genera un URL contenente i dati della lista codificati in Base64
+              direttamente nell'URL. Questi dati vengono trasmessi solo quando decidi attivamente di condividere
+              il link con qualcuno. Non vengono memorizzati su alcun server da parte di ShopList.
+            </P>
+          </Section>
+
+          <Divider sx={{ my: 2 }} />
+
+          <Section title="6. Hosting e terze parti">
             <P>
               L'app è ospitata su <strong>GitHub Pages</strong> (GitHub, Inc.). Il solo accesso alla pagina
               potrebbe essere registrato nei log standard di GitHub secondo la loro
-              <strong> Privacy Policy</strong> (github.com/privacy). ShopList non ha controllo su tali log.
+              <strong> Privacy Policy</strong> (github.com/privacy).
+            </P>
+            <P>
+              L'app carica lo script <strong>Google Identity Services</strong> (accounts.google.com/gsi/client)
+              necessario per il login con Google. Tale script è soggetto alla Google Privacy Policy.
+              Viene caricato indipendentemente dall'utilizzo del login.
             </P>
             <P>
               Non sono integrati strumenti di analytics, tracking, pubblicità o cookie di terze parti.

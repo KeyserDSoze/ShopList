@@ -8,6 +8,7 @@ import SettingsPage from './pages/SettingsPage'
 import PrivacyPage from './pages/PrivacyPage'
 import TermsPage from './pages/TermsPage'
 import HowItWorksPage from './pages/HowItWorksPage'
+import { AuthProvider }    from './contexts/AuthContext'
 import { deserializeList } from './utils/listStorage'
 import { deserializeSupermarket, getAllSupermarkets, createSupermarket, updateSupermarket } from './utils/supermarketStorage'
 import { importCustomCategories, deserializeCustomCategories, importCategoriesList } from './utils/categoryStorage'
@@ -219,6 +220,7 @@ function App() {
   }
 
   return (
+    <AuthProvider>
     <ThemeProvider theme={theme}>
       <CssBaseline />
       {currentPage === 'list' ? (
@@ -396,6 +398,7 @@ function App() {
 
       <Snackbar open={!!snack} autoHideDuration={3000} onClose={() => setSnack('')} message={snack} />
     </ThemeProvider>
+    </AuthProvider>
   )
 }
 

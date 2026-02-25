@@ -40,13 +40,13 @@ const saveSupermarkets = (list) => {
 
 export const createSupermarket = ({ name, categoryOrder = [] }) => {
   const all = getAllSupermarkets()
-  const sm = { id: genId(), name: name.trim(), categoryOrder, createdAt: new Date().toISOString() }
+  const sm = { id: genId(), name: name.trim(), categoryOrder, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() }
   saveSupermarkets([...all, sm])
   return sm
 }
 
 export const updateSupermarket = (id, updates) => {
-  const all = getAllSupermarkets().map(s => s.id === id ? { ...s, ...updates } : s)
+  const all = getAllSupermarkets().map(s => s.id === id ? { ...s, ...updates, updatedAt: new Date().toISOString() } : s)
   saveSupermarkets(all)
   return all.find(s => s.id === id)
 }

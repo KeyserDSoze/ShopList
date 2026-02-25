@@ -53,10 +53,11 @@ export const saveList = (list) => {
   try {
     const lists = getAllLists()
     const index = lists.findIndex(l => l.id === list.id)
-    if (index > -1) lists[index] = list
-    else lists.push(list)
+    const updated = { ...list, updatedAt: new Date().toISOString() }
+    if (index > -1) lists[index] = updated
+    else lists.push(updated)
     localStorage.setItem(STORAGE_KEY, JSON.stringify(lists))
-    return list
+    return updated
   } catch {
     return null
   }

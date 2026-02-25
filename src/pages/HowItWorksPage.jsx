@@ -68,7 +68,7 @@ export default function HowItWorksPage({ onBack }) {
 
           {/* Panoramica */}
           <Alert severity="info" sx={{ mb: 3 }}>
-            ShopList è un'app per gestire le liste della spesa. Tutto viene salvato <strong>solo sul tuo dispositivo</strong> — nessun account richiesto, nessun dato inviato a server.
+            ShopList è un'app per gestire le liste della spesa. Tutto viene salvato <strong>solo sul tuo dispositivo</strong> — nessun account richiesto, nessun dato inviato a server. Facoltativamente puoi collegare il tuo <strong>account Google</strong> per sincronizzare e condividere i dati tra dispositivi.
           </Alert>
 
           <Section emoji="🛒" title="Creare una lista della spesa">
@@ -154,6 +154,31 @@ export default function HowItWorksPage({ onBack }) {
 
           <Divider sx={{ my: 3 }} />
 
+          <Section emoji="☁️" title="Sincronizzazione con Google Drive">
+            <P>
+              Se colleghi il tuo account Google, ShopList salva tutti i tuoi dati (liste di default,
+              supermercati, categorie personalizzate e liste della spesa) in una cartella privata di
+              Google Drive visibile solo all'app — non appare nel tuo Drive normale.
+            </P>
+            <Step n="1" text="Premi l'icona avatar nell'header oppure vai in Impostazioni → ☁️ Sync e premi «Accedi con Google»." />
+            <Step n="2" text="Al primo accesso ShopList scarica automaticamente i dati presenti su Drive e li unisce con quelli locali (vince chi è stato modificato più di recente)." />
+            <Step n="3" text="Abilita «Auto-sync» per sincronizzare automaticamente ogni volta che modifichi qualcosa. Puoi scegliere il ritardo (da 5 secondi a 5 minuti) per evitare upload troppo frequenti." />
+            <Step n="4" text="Ogni singolo elemento (lista, supermercato, lista di default) mostra un badge colorato: verde = sincronizzato, arancione = modifiche non ancora caricate, grigio = mai sincronizzato." />
+            <P>
+              <strong>Condivisione via email</strong> — Tramite il pannello Drive o il badge di ogni elemento
+              puoi condividere un file con un'altra persona inserendo la sua email Google. Chi riceve
+              la condivisione la trova nella scheda «Ricevuti» del pannello Drive e può importarla con
+              un clic.
+            </P>
+            <P>
+              <strong>Cosa viene sincronizzato:</strong> liste di default · supermercati · categorie
+              personalizzate · liste della spesa attive. Non vengono sincronizzate le impostazioni
+              locali (tema, lingua).
+            </P>
+          </Section>
+
+          <Divider sx={{ my: 3 }} />
+
           <Section emoji="🤖" title="Genera con AI">
             <P>
               In Impostazioni puoi usare la funzione «Genera con AI» per creare o arricchire le liste di
@@ -168,17 +193,48 @@ export default function HowItWorksPage({ onBack }) {
         <Paper sx={{ p: { xs: 2, sm: 4 }, borderRadius: 2 }}>
           <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 3 }}>❓ Domande frequenti</Typography>
 
-          <FaqItem q="I miei dati sono al sicuro? Vengono caricati su internet?">
-            No. Tutti i dati — liste, articoli, supermercati, categorie — vengono salvati esclusivamente
-            nel localStorage del tuo browser, sul tuo dispositivo. Nessuna informazione viene inviata
-            a server esterni. L'unica eccezione è la funzione di condivisione: quando condividi un link,
-            i dati sono inclusi nell'URL e accessibili a chi riceve il link.
+          <FaqItem q="Devo avere un account Google per usare ShopList?">
+            No, Google è completamente opzionale. L'app funziona integralmente offline senza nessun
+            account. Il collegamento a Google serve solo se vuoi sincronizzare i dati tra più dispositivi
+            o condividerli con altre persone.
           </FaqItem>
 
-          <FaqItem q="Se cambio browser o dispositivo perdo tutto?">
-            Sì, il localStorage è specifico per browser e dispositivo. Per portare i dati su un altro
-            dispositivo usa la funzione di condivisione: condividi le liste di default, i supermercati
-            e le categorie custom e importali sul nuovo dispositivo.
+          <FaqItem q="Dove vengono salvati i dati su Google Drive?">
+            In una cartella speciale chiamata <strong>appDataFolder</strong>, accessibile solo
+            dall'app ShopList. Non compare nel tuo Google Drive normale e non è visibile ad altre
+            app o persone. I file condivisi esplicitamente (tramite email) sono invece file normali
+            di Drive, accessibili solo alle persone invitate.
+          </FaqItem>
+
+          <FaqItem q="Se cambio telefono, i dati si sincronizzano automaticamente?">
+            Sì. Installa ShopList sul nuovo dispositivo, fai il login con lo stesso account Google
+            e l'app scarica automaticamente tutti i tuoi dati da Drive al primo accesso.
+          </FaqItem>
+
+          <FaqItem q="L'auto-sync carica i dati ogni volta che spunto un articolo?">
+            Non immediatamente: c'è un <strong>ritardo configurabile</strong> (default 30 secondi)
+            prima di inviare le modifiche. Se spunti più articoli in rapida successione, viene fatto
+            un solo upload al termine del ritardo, non uno per ogni spunta.
+          </FaqItem>
+
+          <FaqItem q="Posso condividere una lista con qualcuno via Google Drive?">
+            Sì. Dal badge ☁️ accanto a ogni elemento (o dal pannello Drive nell'header) puoi inserire
+            l'email Google di un'altra persona. Lei riceverà la condivisione nella scheda «Ricevuti»
+            del pannello Drive e potrà importare il contenuto sul suo dispositivo. Puoi anche
+            revocare l'accesso in qualsiasi momento.
+          </FaqItem>
+
+          <FaqItem q="Cosa succede se modifico gli stessi dati su due dispositivi contemporaneamente?">
+            Al successivo sync vince il dato con la data di modifica più recente
+            (<strong>last-write-wins</strong>). Non c'è un merge granulare articolo per articolo:
+            l'intero bundle viene confrontato per data, quindi conviene sincronizzare spesso per
+            ridurre il rischio di sovrascritture indesiderate.
+          </FaqItem>
+
+          <FaqItem q="I miei dati su Google Drive sono al sicuro?">
+            Sì. La cartella appDataFolder è privata e cifrata da Google. ShopList richiede solo i
+            permessi strettamente necessari: lettura/scrittura della propria cartella appData e
+            creazione di file condivisi. Non viene richiesto accesso agli altri file del tuo Drive.
           </FaqItem>
 
           <FaqItem q="Posso usare l'app offline?">

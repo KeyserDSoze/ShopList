@@ -17,7 +17,7 @@ export const getCustomCategories = () => {
   }
 }
 
-const saveCustomCategories = (cats) => {
+export const saveCustomCategories = (cats) => {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(cats))
   return cats
 }

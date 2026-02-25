@@ -52,8 +52,11 @@ export default function TermsPage({ onBack }) {
               della spesa, organizzare articoli per categoria, definire liste di default e configurare
               supermercati personalizzati.
             </P>
-            <P>
-              Il servizio è fornito "così com'è" (as-is), senza garanzie di disponibilità continua,
+            <P>              L'app offre opzionalmente la sincronizzazione con <strong>Google Drive</strong> per
+              mantenere i dati aggiornati su più dispositivi e condividere elementi con altri utenti
+              tramite email.
+            </P>
+            <P>              Il servizio è fornito "così com'è" (as-is), senza garanzie di disponibilità continua,
               aggiornamenti futuri o assistenza tecnica.
             </P>
           </Section>
@@ -73,16 +76,36 @@ export default function TermsPage({ onBack }) {
 
           <Section title="4. Dati e responsabilità">
             <P>
-              I dati inseriti nell'app vengono salvati localmente sul dispositivo dell'utente.
-              L'utente è l'unico responsabile del backup e della conservazione dei propri dati.
+              I dati inseriti nell'app vengono salvati localmente nel localStorage del dispositivo dell'utente.
+              L'utente è l'unico responsabile del backup e della conservazione dei propri dati locali.
               Lo sviluppatore non è responsabile per perdita di dati dovuta a svuotamento del browser,
               cambio di dispositivo o altri eventi.
+            </P>
+            <P>
+              Se l'utente sceglie di attivare la sincronizzazione con Google Drive, i dati vengono
+              caricati nella cartella privata appDataFolder del proprio account Google. L'utente è
+              responsabile della gestione del proprio account Google e della sicurezza delle credenziali.
+              Lo sviluppatore non ha accesso ai dati salvati su Google Drive degli utenti.
             </P>
           </Section>
 
           <Divider sx={{ my: 2 }} />
 
-          <Section title="5. Funzione di condivisione">
+          <Section title="5. Condivisione tramite Google Drive">
+            <P>
+              La funzione di condivisione via email utilizza Google Drive per creare file accessibili
+              alle persone invitate. L'utente è responsabile di chi invita e dei contenuti condivisi.
+              Lo sviluppatore non è responsabile per l'uso che i destinatari fanno dei dati ricevuti.
+            </P>
+            <P>
+              L'utente può revocare in qualsiasi momento l'accesso ai file condivisi tramite il pannello
+              Drive nell'app o direttamente da Google Drive.
+            </P>
+          </Section>
+
+          <Divider sx={{ my: 2 }} />
+
+          <Section title="6. Funzione di condivisione via link">
             <P>
               I link di condivisione contengono i dati della lista codificati nell'URL. L'utente è
               responsabile di chi riceve tali link. Lo sviluppatore non ha accesso ai dati condivisi
@@ -92,7 +115,7 @@ export default function TermsPage({ onBack }) {
 
           <Divider sx={{ my: 2 }} />
 
-          <Section title="6. Proprietà intellettuale">
+          <Section title="7. Proprietà intellettuale">
             <P>
               Il codice sorgente di ShopList è disponibile su GitHub. Puoi consultare la licenza applicata
               nel repository per i dettagli su copia, modifica e ridistribuzione.
@@ -101,7 +124,7 @@ export default function TermsPage({ onBack }) {
 
           <Divider sx={{ my: 2 }} />
 
-          <Section title="7. Limitazione di responsabilità">
+          <Section title="8. Limitazione di responsabilità">
             <P>
               Lo sviluppatore non è responsabile per danni diretti, indiretti, incidentali o consequenziali
               derivanti dall'uso o dall'impossibilità di usare l'applicazione. L'app è fornita gratuitamente
@@ -111,7 +134,7 @@ export default function TermsPage({ onBack }) {
 
           <Divider sx={{ my: 2 }} />
 
-          <Section title="8. Modifiche ai termini">
+          <Section title="9. Modifiche ai termini">
             <P>
               I presenti termini possono essere aggiornati in qualsiasi momento. L'uso continuato
               dell'app dopo la pubblicazione delle modifiche costituisce accettazione dei nuovi termini.
@@ -120,7 +143,7 @@ export default function TermsPage({ onBack }) {
 
           <Divider sx={{ my: 2 }} />
 
-          <Section title="9. Legge applicabile">
+          <Section title="10. Legge applicabile">
             <P>
               I presenti termini sono regolati dalla legge italiana. Per qualsiasi controversia è
               competente il foro del domicilio dello sviluppatore.

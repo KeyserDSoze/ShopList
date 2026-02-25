@@ -46,13 +46,13 @@ const _saveAll = (lists) => {
 
 export const createDefaultList = ({ name, items = [] }) => {
   const all = getAllDefaultLists()
-  const list = { id: genId(), name: name.trim(), items, isDefault: all.length === 0, createdAt: new Date().toISOString() }
+  const list = { id: genId(), name: name.trim(), items, isDefault: all.length === 0, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() }
   _saveAll([...all, list])
   return list
 }
 
 export const updateDefaultList = (id, updates) => {
-  const all = getAllDefaultLists().map(l => l.id === id ? { ...l, ...updates } : l)
+  const all = getAllDefaultLists().map(l => l.id === id ? { ...l, ...updates, updatedAt: new Date().toISOString() } : l)
   _saveAll(all)
   return all.find(l => l.id === id)
 }
@@ -102,7 +102,7 @@ export const saveDefaultItems = (items) => {
 }
 
 export const saveListItems = (id, items) => {
-  const all = getAllDefaultLists().map(l => l.id === id ? { ...l, items } : l)
+  const all = getAllDefaultLists().map(l => l.id === id ? { ...l, items, updatedAt: new Date().toISOString() } : l)
   _saveAll(all)
 }
 

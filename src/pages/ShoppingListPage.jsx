@@ -24,6 +24,7 @@ import DeleteIcon from '@mui/icons-material/Delete'
 import ShareIcon from '@mui/icons-material/Share'
 import CheckCircleIcon from '@mui/icons-material/CheckCircle'
 import { getListById, toggleItemCheck, removeItemFromList, addItemToList, getListProgress, updateListStatus, serializeList } from '../utils/listStorage'
+import DrivePanel from '../components/DrivePanel'
 import { BUILTIN_CATEGORIES, getCategoryName } from '../constants/categories'
 import { getCustomCategories } from '../utils/categoryStorage'
 import { getAllSupermarkets } from '../utils/supermarketStorage'
@@ -255,6 +256,7 @@ export default function ShoppingListPage({ listId, onBack }) {
                 {list.items.filter(i => i.checked).length} / {list.items.length} articoli presi
               </Typography>
             </Box>
+            <DrivePanel currentList={list} />
           </Box>
           <LinearProgress
             variant="determinate"

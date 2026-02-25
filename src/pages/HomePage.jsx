@@ -27,6 +27,8 @@ import SettingsIcon from '@mui/icons-material/Settings'
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline'
 import { getAllLists, createNewList, deleteList, getListProgress } from '../utils/listStorage'
 import { getAllDefaultLists } from '../utils/defaultListStorage'
+import DrivePanel from '../components/DrivePanel'
+import SyncBadge from '../components/SyncBadge'
 
 // Somma quantità compatibili (es. "30 g" + "30 g" → "60 g")
 function mergeQuantity(a, b) {
@@ -59,6 +61,10 @@ export default function HomePage({ onSelectList, onOpenSettings, onOpenPrivacy, 
 
   useEffect(() => {
     loadLists()
+    // Reload when Drive pulls remote data
+    const handler = () => loadLists()
+    window.addEventListener('shoplist-drive-pulled', handler)
+    return () => window.removeEventListener('shoplist-drive-pulled', handler)
   }, [])
 
   useEffect(() => {
@@ -142,13 +148,16 @@ export default function HomePage({ onSelectList, onOpenSettings, onOpenPrivacy, 
         px: { xs: 2, sm: 3, md: 4 },
         py: { xs: 2.5, sm: 3 },
       }}>
-        <Box sx={{ maxWidth: 1200, mx: 'auto' }}>
-          <Typography variant="h4" component="h1" sx={{ fontWeight: 'bold', fontSize: { xs: '1.5rem', sm: '2rem' } }}>
-            🛒 ShopList
-          </Typography>
-          <Typography variant="body2" sx={{ opacity: 0.9, mt: 0.5 }}>
-            Gestisci le tue liste della spesa
-          </Typography>
+        <Box sx={{ maxWidth: 1200, mx: 'auto', display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Box sx={{ flex: 1 }}>
+            <Typography variant="h4" component="h1" sx={{ fontWeight: 'bold', fontSize: { xs: '1.5rem', sm: '2rem' } }}>
+              🛒 ShopList
+            </Typography>
+            <Typography variant="body2" sx={{ opacity: 0.9, mt: 0.5 }}>
+              Gestisci le tue liste della spesa
+            </Typography>
+          </Box>
+          <DrivePanel />
         </Box>
       </Box>
 
@@ -248,7 +257,15 @@ export default function HomePage({ onSelectList, onOpenSettings, onOpenPrivacy, 
                           {list.items.length} articoli
                         </Typography>
                       </CardContent>
-                      <CardActions>
+                      <CardActions sx={{ flexDirection: 'column', alignItems: 'flex-start', gap: 0.5, pt: 0 }}>
+                        <SyncBadge
+                          syncType="list"
+                          driveType="list"
+                          id={list.id}
+                          updatedAt={list.updatedAt}
+                          name={list.name}
+                          getData={() => ({ data: { items: list.items } })}
+                        />
                         <Button
                           size="small"
                           color="error"
