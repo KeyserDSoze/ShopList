@@ -13,10 +13,12 @@ import {
   Select,
   MenuItem,
   FormControl,
+  FormControlLabel,
   InputLabel,
   IconButton,
   Alert,
   Snackbar,
+  Switch,
 } from '@mui/material'
 import ArrowBackIcon from '@mui/icons-material/ArrowBack'
 import AddIcon from '@mui/icons-material/Add'
@@ -44,7 +46,21 @@ export default function ShoppingListPage({ listId, onBack }) {
   const [snackbar, setSnackbar] = useState({ open: false, message: '' })
   const [customCategories, setCustomCategories] = useState(getCustomCategories())
   const [supermarkets, setSupermarkets] = useState(getAllSupermarkets())
-  const [selectedSupermarketId, setSelectedSupermarketId] = useState('')
+  const [selectedSupermarketId, setSelectedSupermarketId] = useState(
+    () => sessionStorage.getItem(`shoplist_sm_session_${listId}`) || ''
+  )
+  const [hideChecked, setHideChecked] = useState(
+    () => sessionStorage.getItem(`shoplist_hide_checked_${listId}`) === 'true'
+  )
+  const handleSelectSupermarket = (id) => {
+    setSelectedSupermarketId(id)
+    if (id) sessionStorage.setItem(`shoplist_sm_session_${listId}`, id)
+    else sessionStorage.removeItem(`shoplist_sm_session_${listId}`)
+  }
+  const handleHideChecked = (val) => {
+    setHideChecked(val)
+    sessionStorage.setItem(`shoplist_hide_checked_${listId}`, val ? 'true' : 'false')
+  }
   const [searchText, setSearchText] = useState('')
 
   useEffect(() => {
@@ -300,7 +316,7 @@ export default function ShoppingListPage({ listId, onBack }) {
             <FormControl size="small" sx={{ mb: 2, minWidth: 220 }}>
               <InputLabel>🏪 Supermercato</InputLabel>
               <Select value={selectedSupermarketId} label="🏪 Supermercato"
-                onChange={e => setSelectedSupermarketId(e.target.value)}>
+                onChange={e => handleSelectSupermarket(e.target.value)}>
                 <MenuItem value=""><em>Tutti i reparti</em></MenuItem>
                 {supermarkets.map(sm => (
                   <MenuItem key={sm.id} value={sm.id}>{sm.name}</MenuItem>
@@ -317,15 +333,26 @@ export default function ShoppingListPage({ listId, onBack }) {
               placeholder="🔍 Cerca articolo..."
               value={searchText}
               onChange={e => setSearchText(e.target.value)}
-              sx={{ mb: 2 }}
+              sx={{ mb: isReadyToPurchase ? 1 : 2 }}
               inputProps={{ 'aria-label': 'cerca articolo' }}
+            />
+          )}
+
+          {isReadyToPurchase && (
+            <FormControlLabel
+              control={<Switch checked={hideChecked} onChange={e => handleHideChecked(e.target.checked)} size="small" />}
+              label="Nascondi presi"
+              sx={{ mb: 1, ml: 0 }}
             />
           )}
 
           {/* Articoli */}
           {(() => {
             const q = searchText.trim().toLowerCase()
-            const filteredItems = q ? visibleItems.filter(i => i.name.toLowerCase().includes(q)) : visibleItems
+            let filteredItems = q ? visibleItems.filter(i => i.name.toLowerCase().includes(q)) : visibleItems
+            if (isReadyToPurchase && hideChecked) {
+              filteredItems = filteredItems.filter(i => !i.checked)
+            }
             return filteredItems.length > 0 ? (
               <PurchasableItems
                 items={filteredItems}
