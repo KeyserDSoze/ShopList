@@ -37,6 +37,7 @@ export default function ShoppingListPage({ listId, onBack }) {
   const [newItem, setNewItem] = useState({ name: '', categoryId: 1, quantity: '' })
   const [dietItems, setDietItems] = useState([])
   const [purchasableItems, setPurchasableItems] = useState([])
+  const [locallyRemovedItems, setLocallyRemovedItems] = useState([])
   const [shareUrl, setShareUrl] = useState('')
   const [openShareDialog, setOpenShareDialog] = useState(false)
   const [snackbar, setSnackbar] = useState({ open: false, message: '' })
@@ -49,6 +50,7 @@ export default function ShoppingListPage({ listId, onBack }) {
     loadDiet()
     setCustomCategories(getCustomCategories())
     setSupermarkets(getAllSupermarkets())
+    setLocallyRemovedItems([])
   }, [listId])
 
   useEffect(() => {
@@ -93,13 +95,21 @@ export default function ShoppingListPage({ listId, onBack }) {
     }
   }
 
+  // Items kept visible after being unchecked this session (custom items not in default diet)
+  const allPurchasableItems = [
+    ...purchasableItems,
+    ...locallyRemovedItems.filter(lr =>
+      !purchasableItems.some(p => p.name.toLowerCase() === lr.name.toLowerCase())
+    ).map(lr => ({ ...lr, checked: false })),
+  ]
+
   // Filter and sort by selected supermarket
   const visibleItems = (() => {
-    if (!selectedSupermarketId) return purchasableItems
+    if (!selectedSupermarketId) return allPurchasableItems
     const sm = supermarkets.find(s => s.id === selectedSupermarketId)
-    if (!sm || !sm.categoryOrder?.length) return purchasableItems
+    if (!sm || !sm.categoryOrder?.length) return allPurchasableItems
     const order = sm.categoryOrder
-    const filtered = purchasableItems.filter(item => {
+    const filtered = allPurchasableItems.filter(item => {
       const catId = item.categoryId
       return order.includes(catId) || order.includes(+catId)
     })
@@ -116,10 +126,11 @@ export default function ShoppingListPage({ listId, onBack }) {
   })()
 
   const handleTogglePurchasable = (itemId) => {
-    const purchasable = purchasableItems.find(item => item.id === itemId)
+    const purchasable = allPurchasableItems.find(item => item.id === itemId)
     if (!purchasable) return
 
     const inList = list.items.some(item => item.name.toLowerCase() === purchasable.name.toLowerCase())
+    const isCustom = !dietItems.some(d => d.name.toLowerCase() === purchasable.name.toLowerCase())
 
     if (inList) {
       const itemToRemove = list.items.find(item => item.name.toLowerCase() === purchasable.name.toLowerCase())
@@ -127,13 +138,22 @@ export default function ShoppingListPage({ listId, onBack }) {
         const updated = removeItemFromList(listId, itemToRemove.id)
         if (updated) setList(updated)
       }
+      // Custom items stay visible as unchecked until page reload
+      if (isCustom) {
+        setLocallyRemovedItems(prev => [
+          ...prev.filter(i => i.id !== purchasable.id),
+          { ...purchasable, checked: false },
+        ])
+      }
     } else {
+      // Re-checking: add back to list and remove from local tracking
       const updated = addItemToList(listId, {
         name: purchasable.name,
         categoryId: purchasable.categoryId,
         quantity: purchasable.quantity || '',
       })
       if (updated) setList(updated)
+      setLocallyRemovedItems(prev => prev.filter(i => i.id !== purchasable.id))
     }
   }
 
@@ -150,6 +170,7 @@ export default function ShoppingListPage({ listId, onBack }) {
     const updated = addItemToList(listId, newItem)
     if (updated) {
       setList(updated)
+      setLocallyRemovedItems(prev => prev.filter(i => i.name.toLowerCase() !== newItem.name.trim().toLowerCase()))
       setNewItem({ name: '', categoryId: 1, quantity: '' })
       setOpenAddDialog(false)
     }
