@@ -77,3 +77,22 @@ export const importCustomCategories = (encoded) => {
   saveCustomCategories([...existing, ...toAdd])
   return toAdd
 }
+
+/**
+ * Importa una lista di categorie già deserializzate.
+ * mode 'add'       → aggiunge solo quelle con nome non già presente
+ * mode 'overwrite' → sostituisce tutte le categorie custom
+ */
+export const importCategoriesList = (cats, mode = 'add') => {
+  if (mode === 'overwrite') {
+    saveCustomCategories(cats.map(c => ({ ...c, isCustom: true })))
+    return { added: cats.length, skipped: 0 }
+  }
+  const existing = getCustomCategories()
+  const existingNames = new Set(existing.map(c => c.name.toLowerCase()))
+  const toAdd = cats
+    .filter(c => !existingNames.has(c.name.toLowerCase()))
+    .map(c => ({ ...c, isCustom: true }))
+  saveCustomCategories([...existing, ...toAdd])
+  return { added: toAdd.length, skipped: cats.length - toAdd.length }
+}

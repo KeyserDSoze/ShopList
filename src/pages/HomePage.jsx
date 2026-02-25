@@ -15,12 +15,35 @@ import {
   TextField,
   Alert,
   Chip,
+  FormGroup,
+  FormControlLabel,
+  Checkbox,
+  Divider,
 } from '@mui/material'
 import AddIcon from '@mui/icons-material/Add'
 import DeleteIcon from '@mui/icons-material/Delete'
 import EditIcon from '@mui/icons-material/Edit'
 import SettingsIcon from '@mui/icons-material/Settings'
 import { getAllLists, createNewList, deleteList, getListProgress } from '../utils/listStorage'
+import { getAllDefaultLists } from '../utils/defaultListStorage'
+
+// Somma quantità compatibili (es. "30 g" + "30 g" → "60 g")
+function mergeQuantity(a, b) {
+  if (!a && !b) return ''
+  if (!a) return b
+  if (!b) return a
+  const parseQ = s => {
+    const m = s.trim().match(/^([\d.,]+)\s*([a-zA-Z]*)$/)
+    if (!m) return null
+    return { num: parseFloat(m[1].replace(',', '.')), unit: m[2].toLowerCase() }
+  }
+  const qa = parseQ(a), qb = parseQ(b)
+  if (qa && qb && qa.unit === qb.unit) {
+    const rounded = Math.round((qa.num + qb.num) * 1000) / 1000
+    return qa.unit ? `${rounded} ${qa.unit}` : String(rounded)
+  }
+  return `${a} + ${b}`
+}
 import { formatDistanceToNow, format } from 'date-fns'
 import { it } from 'date-fns/locale'
 
@@ -30,14 +53,21 @@ export default function HomePage({ onSelectList, onOpenSettings }) {
   const [newListName, setNewListName] = useState('')
   const [openDeleteDialog, setOpenDeleteDialog] = useState(false)
   const [deleteListId, setDeleteListId] = useState(null)
+  const [defaultLists, setDefaultLists] = useState([])
+  const [selectedDefaultIds, setSelectedDefaultIds] = useState([])
 
   useEffect(() => {
     loadLists()
   }, [])
 
   useEffect(() => {
-    if (openDialog && !newListName) {
-      setNewListName(`Spesa-${format(new Date(), 'yyyy-MM-dd')}`)
+    if (openDialog) {
+      if (!newListName) setNewListName(`Spesa-${format(new Date(), 'yyyy-MM-dd')}`)
+      const dl = getAllDefaultLists()
+      setDefaultLists(dl)
+      // Pre-select the default list (or the first one if only one)
+      const def = dl.find(l => l.isDefault) || dl[0]
+      setSelectedDefaultIds(def ? [def.id] : [])
     }
   }, [openDialog])
 
@@ -46,9 +76,32 @@ export default function HomePage({ onSelectList, onOpenSettings }) {
     setLists(allLists)
   }
 
+  const toggleDefaultList = (id) => {
+    setSelectedDefaultIds(prev =>
+      prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
+    )
+  }
+
+  const getMergedItems = () => {
+    const selected = defaultLists.filter(l => selectedDefaultIds.includes(l.id))
+    const merged = []
+    for (const list of selected) {
+      for (const item of list.items) {
+        const idx = merged.findIndex(e => e.name.toLowerCase() === item.name.toLowerCase())
+        if (idx >= 0) {
+          merged[idx] = { ...merged[idx], quantity: mergeQuantity(merged[idx].quantity, item.quantity) }
+        } else {
+          merged.push({ ...item })
+        }
+      }
+    }
+    return merged
+  }
+
   const handleCreateList = () => {
     if (!newListName.trim()) return
-    const newList = createNewList(newListName)
+    const defaultItems = getMergedItems()
+    const newList = createNewList(newListName, defaultItems)
     if (newList) {
       setLists(prev => [...prev, newList])
       setNewListName('')
@@ -204,12 +257,9 @@ export default function HomePage({ onSelectList, onOpenSettings }) {
         </Box>
       </Box>
 
-      <Dialog open={openDialog} onClose={() => {
-        setOpenDialog(false)
-        setNewListName('')
-      }} maxWidth="sm" fullWidth>
+      <Dialog open={openDialog} onClose={() => { setOpenDialog(false); setNewListName('') }} maxWidth="sm" fullWidth>
         <DialogTitle>Crea una nuova lista della spesa</DialogTitle>
-        <DialogContent sx={{ pt: 2 }}>
+        <DialogContent sx={{ pt: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
           <TextField
             autoFocus
             fullWidth
@@ -219,12 +269,45 @@ export default function HomePage({ onSelectList, onOpenSettings }) {
             onChange={(e) => setNewListName(e.target.value)}
             onKeyPress={(e) => e.key === 'Enter' && handleCreateList()}
           />
+          {defaultLists.length > 0 && (
+            <Box>
+              <Divider sx={{ mb: 1.5 }} />
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                {defaultLists.length === 1
+                  ? 'Lista di default da usare come base:'
+                  : 'Scegli le liste di default da usare come base (le selezioni vengono unite):'}
+              </Typography>
+              <FormGroup>
+                {defaultLists.map(dl => (
+                  <FormControlLabel
+                    key={dl.id}
+                    control={
+                      <Checkbox
+                        checked={selectedDefaultIds.includes(dl.id)}
+                        onChange={() => toggleDefaultList(dl.id)}
+                        size="small"
+                      />
+                    }
+                    label={
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <Typography variant="body2">{dl.name}</Typography>
+                        <Typography variant="caption" color="text.secondary">({dl.items.length} art.)</Typography>
+                        {dl.isDefault && <Chip label="default" size="small" sx={{ height: 16, fontSize: 10, bgcolor: '#667eea', color: 'white' }} />}
+                      </Box>
+                    }
+                  />
+                ))}
+              </FormGroup>
+              {selectedDefaultIds.length > 1 && (
+                <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
+                  {getMergedItems().length} articoli totali dopo l'unione
+                </Typography>
+              )}
+            </Box>
+          )}
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => {
-            setOpenDialog(false)
-            setNewListName('')
-          }}>Annulla</Button>
+          <Button onClick={() => { setOpenDialog(false); setNewListName('') }}>Annulla</Button>
           <Button onClick={handleCreateList} variant="contained" color="primary">
             Crea
           </Button>
