@@ -24,6 +24,7 @@ import AddIcon from '@mui/icons-material/Add'
 import DeleteIcon from '@mui/icons-material/Delete'
 import EditIcon from '@mui/icons-material/Edit'
 import SettingsIcon from '@mui/icons-material/Settings'
+import HelpOutlineIcon from '@mui/icons-material/HelpOutline'
 import { getAllLists, createNewList, deleteList, getListProgress } from '../utils/listStorage'
 import { getAllDefaultLists } from '../utils/defaultListStorage'
 
@@ -47,7 +48,7 @@ function mergeQuantity(a, b) {
 import { formatDistanceToNow, format } from 'date-fns'
 import { it } from 'date-fns/locale'
 
-export default function HomePage({ onSelectList, onOpenSettings }) {
+export default function HomePage({ onSelectList, onOpenSettings, onOpenPrivacy, onOpenTerms, onOpenHowTo }) {
   const [lists, setLists] = useState([])
   const [openDialog, setOpenDialog] = useState(false)
   const [newListName, setNewListName] = useState('')
@@ -178,6 +179,15 @@ export default function HomePage({ onSelectList, onOpenSettings }) {
               sx={{ width: '100%', py: 1.5, fontSize: '1rem' }}
             >
               Nuova lista
+            </Button>
+            <Button
+              variant="text"
+              startIcon={<HelpOutlineIcon />}
+              onClick={onOpenHowTo}
+              size="medium"
+              sx={{ width: '100%', color: 'text.secondary' }}
+            >
+              Come funziona
             </Button>
           </Box>
 
@@ -328,6 +338,18 @@ export default function HomePage({ onSelectList, onOpenSettings }) {
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* Footer */}
+      <Box sx={{ width: '100%', py: 3, px: 2, textAlign: 'center', borderTop: '1px solid', borderColor: 'divider', mt: 2 }}>
+        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
+          ShopList — tutti i dati sono salvati solo sul tuo dispositivo
+        </Typography>
+        <Box sx={{ display: 'flex', justifyContent: 'center', gap: 2, flexWrap: 'wrap' }}>
+          <Button size="small" sx={{ color: 'text.secondary', fontSize: '0.7rem', minWidth: 0 }} onClick={onOpenHowTo}>Come funziona & FAQ</Button>
+          <Button size="small" sx={{ color: 'text.secondary', fontSize: '0.7rem', minWidth: 0 }} onClick={onOpenPrivacy}>Privacy Policy</Button>
+          <Button size="small" sx={{ color: 'text.secondary', fontSize: '0.7rem', minWidth: 0 }} onClick={onOpenTerms}>Termini di servizio</Button>
+        </Box>
+      </Box>
     </Box>
   )
 }

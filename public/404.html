@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="utf-8" />
+  <title>ShopList</title>
+  <script>
+    // SPA redirect trick for GitHub Pages.
+    // When GitHub Pages returns 404 for a deep link (e.g. /ShopList/Privacy),
+    // this page reads the path, extracts the sub-path after the base, and
+    // redirects to the SPA root with ?p=<subpath> so the app can navigate there.
+    (function () {
+      var base = '/ShopList';
+      var path = window.location.pathname;
+      var subpath = path.startsWith(base) ? path.slice(base.length).replace(/^\//, '').replace(/\/$/, '') : '';
+      var search = window.location.search;
+      var hash = window.location.hash;
+      var redirect = window.location.origin + base + '/' +
+        (subpath ? '?p=' + encodeURIComponent(subpath) + (search ? '&' + search.slice(1) : '') : (search || '')) +
+        hash;
+      window.location.replace(redirect);
+    })();
+  </script>
+</head>
+<body></body>
+</html>

@@ -5,6 +5,9 @@ import { Dialog, DialogTitle, DialogContent, DialogActions, Button, TextField, S
 import HomePage from './pages/HomePage'
 import ShoppingListPage from './pages/ShoppingListPage'
 import SettingsPage from './pages/SettingsPage'
+import PrivacyPage from './pages/PrivacyPage'
+import TermsPage from './pages/TermsPage'
+import HowItWorksPage from './pages/HowItWorksPage'
 import { deserializeList } from './utils/listStorage'
 import { deserializeSupermarket, getAllSupermarkets, createSupermarket, updateSupermarket } from './utils/supermarketStorage'
 import { importCustomCategories, deserializeCustomCategories, importCategoriesList } from './utils/categoryStorage'
@@ -40,7 +43,7 @@ const theme = createTheme({
 })
 
 function App() {
-  const [currentPage, setCurrentPage] = useState('home') // 'home' | 'list' | 'settings'
+  const [currentPage, setCurrentPage] = useState('home') // 'home' | 'list' | 'settings' | 'privacy' | 'terms' | 'howto'
   const [currentListId, setCurrentListId] = useState(null)
   const [openImportDialog, setOpenImportDialog] = useState(false)
   const [sharedListData, setSharedListData] = useState(null)
@@ -61,6 +64,24 @@ function App() {
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
+
+    // Deep-link routing via ?p= (set by 404.html redirect for GitHub Pages SPA)
+    // Also check the URL pathname directly (works in local dev + non-GH-Pages hosting)
+    const pageMap = { Privacy: 'privacy', Terms: 'terms', HowTo: 'howto' }
+    const pageParam = params.get('p')
+    if (pageParam && pageMap[pageParam]) {
+      setCurrentPage(pageMap[pageParam]); return
+    }
+    const basePath = '/ShopList'
+    const rawPath = window.location.pathname
+    const subpath = rawPath.startsWith(basePath)
+      ? rawPath.slice(basePath.length).replace(/^\//, '').replace(/\/$/, '')
+      : rawPath.replace(/^\//, '').replace(/\/$/, '')
+    if (subpath && pageMap[subpath]) {
+      // Clean up the URL so it reflects the SPA root
+      window.history.replaceState(null, '', basePath + '/' + (window.location.search || ''))
+      setCurrentPage(pageMap[subpath]); return
+    }
 
     // Lista condivisa
     const shareData = params.get('share')
@@ -204,10 +225,19 @@ function App() {
         <ShoppingListPage listId={currentListId} onBack={() => setCurrentPage('home')} />
       ) : currentPage === 'settings' ? (
         <SettingsPage onBack={() => setCurrentPage('home')} />
+      ) : currentPage === 'privacy' ? (
+        <PrivacyPage onBack={() => setCurrentPage('home')} />
+      ) : currentPage === 'terms' ? (
+        <TermsPage onBack={() => setCurrentPage('home')} />
+      ) : currentPage === 'howto' ? (
+        <HowItWorksPage onBack={() => setCurrentPage('home')} />
       ) : (
         <HomePage
           onSelectList={(id) => navigateToList(id)}
           onOpenSettings={() => setCurrentPage('settings')}
+          onOpenPrivacy={() => setCurrentPage('privacy')}
+          onOpenTerms={() => setCurrentPage('terms')}
+          onOpenHowTo={() => setCurrentPage('howto')}
         />
       )}
 
