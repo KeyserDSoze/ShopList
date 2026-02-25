@@ -29,18 +29,19 @@ export function saveSyncSettings(updates) {
 }
 
 let syncTimer = null
-let currentToken = null
+let getTokenFn = null
 
 // ─── Debounced sync ───────────────────────────────────────────────────────────
-
-export function scheduleSync(token, delay = 3000) {
-  currentToken = token
+// getToken: async function that returns a fresh access token (e.g. ensureToken from AuthContext)
+export function scheduleSync(getToken, delay = 3000) {
+  getTokenFn = getToken
   if (syncTimer) clearTimeout(syncTimer)
   syncTimer = setTimeout(async () => {
-    if (!currentToken) return
+    if (!getTokenFn) return
     try {
       window.dispatchEvent(new CustomEvent('shoplist-sync-status', { detail: 'syncing' }))
-      await pushAll(currentToken)
+      const token = await getTokenFn()   // always get fresh token at execution time
+      await pushAll(token)
       window.dispatchEvent(new CustomEvent('shoplist-sync-status', { detail: 'ok' }))
     } catch (e) {
       window.dispatchEvent(new CustomEvent('shoplist-sync-status', { detail: 'error', error: e.message }))

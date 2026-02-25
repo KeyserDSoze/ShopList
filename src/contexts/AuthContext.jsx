@@ -55,6 +55,7 @@ export function AuthProvider({ children }) {
 
   const autoSyncRef  = useRef(autoSync)
   const syncDelayRef = useRef(syncDelay)
+  const ensureTokenRef = useRef(null)   // set after ensureToken is defined
   useEffect(() => { autoSyncRef.current  = autoSync  }, [autoSync])
   useEffect(() => { syncDelayRef.current = syncDelay }, [syncDelay])
 
@@ -74,9 +75,10 @@ export function AuthProvider({ children }) {
         !SYNC_SKIP_KEYS.has(key) &&
         key.startsWith('shoplist_') &&
         latestTokenRef.current &&
+        ensureTokenRef.current &&
         autoSyncRef.current
       ) {
-        scheduleSync(latestTokenRef.current, syncDelayRef.current)
+        scheduleSync(ensureTokenRef.current, syncDelayRef.current)
       }
     }
     return () => { localStorage.setItem = orig }
@@ -198,6 +200,9 @@ export function AuthProvider({ children }) {
     try   { return await _requestToken('') }         // silent
     catch { return await _requestToken('select_account') } // popup
   }, [token, tokenExpiry, _requestToken])
+
+  // keep ref in sync so localStorage patch can call it without stale closure
+  useEffect(() => { ensureTokenRef.current = ensureToken }, [ensureToken])
 
   // ─── syncNow ──────────────────────────────────────────────────────────────
   const syncNow = useCallback(async () => {
