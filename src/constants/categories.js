@@ -14,6 +14,7 @@ export const BUILTIN_CATEGORIES = [
   { id: 25, emoji: '🌻', translations: { it: 'Semi',                        en: 'Seeds' } },
   { id: 26, emoji: '🫙', translations: { it: 'Creme & Burri Vegetali',      en: 'Nut Butters & Creams' } },
   { id: 27, emoji: '🥛', translations: { it: 'Latte Vegetale',              en: 'Plant-based Milk' } },
+  { id: 29, emoji: '🍼', translations: { it: 'Latte e Derivati',            en: 'Dairy' } },
   { id: 8,  emoji: '🫒', translations: { it: 'Condimenti & Conserve',       en: 'Condiments & Preserves' } },
   { id: 9,  emoji: '🥣', translations: { it: 'Colazione',                   en: 'Breakfast' } },
   { id: 10, emoji: '☕', translations: { it: 'Bevande',                     en: 'Beverages' } },

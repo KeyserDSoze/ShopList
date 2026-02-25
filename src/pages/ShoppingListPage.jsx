@@ -44,6 +44,7 @@ export default function ShoppingListPage({ listId, onBack }) {
   const [customCategories, setCustomCategories] = useState(getCustomCategories())
   const [supermarkets, setSupermarkets] = useState(getAllSupermarkets())
   const [selectedSupermarketId, setSelectedSupermarketId] = useState('')
+  const [searchText, setSearchText] = useState('')
 
   useEffect(() => {
     loadList()
@@ -306,10 +307,26 @@ export default function ShoppingListPage({ listId, onBack }) {
             </FormControl>
           )}
 
-          {/* Articoli */}
+          {/* Search filter */}
           {visibleItems.length > 0 && (
-            <PurchasableItems
-              items={visibleItems}
+            <TextField
+              size="small"
+              fullWidth
+              placeholder="🔍 Cerca articolo..."
+              value={searchText}
+              onChange={e => setSearchText(e.target.value)}
+              sx={{ mb: 2 }}
+              inputProps={{ 'aria-label': 'cerca articolo' }}
+            />
+          )}
+
+          {/* Articoli */}
+          {(() => {
+            const q = searchText.trim().toLowerCase()
+            const filteredItems = q ? visibleItems.filter(i => i.name.toLowerCase().includes(q)) : visibleItems
+            return filteredItems.length > 0 ? (
+              <PurchasableItems
+                items={filteredItems}
               customCategories={customCategories}
               onToggleItem={(itemId) => {
                 const item = visibleItems.find(p => p.id === itemId)
@@ -324,7 +341,10 @@ export default function ShoppingListPage({ listId, onBack }) {
               }}
               isReadyToPurchase={isReadyToPurchase}
             />
-          )}
+            ) : q ? (
+              <Alert severity="info">Nessun articolo trovato per "{searchText.trim()}".</Alert>
+            ) : null
+          })()}
 
         </Box>
       </Box>

@@ -440,6 +440,7 @@ function DefaultListEditor({ list, customCategories, onBack, onListUpdated }) {
   const [snack, setSnack] = useState('')
   const [editName, setEditName] = useState(false)
   const [nameVal, setNameVal] = useState(list.name)
+  const [search, setSearch] = useState('')
 
   useEffect(() => { setItems(list.items) }, [list.id])
 
@@ -513,12 +514,15 @@ function DefaultListEditor({ list, customCategories, onBack, onListUpdated }) {
     ...customCategories.map(c => ({ id: c.id, label: `${c.emoji} ${c.name}` })),
   ]
 
-  const grouped = items.reduce((acc, item, idx) => {
-    const catId = item.categoryId
-    if (!acc[catId]) acc[catId] = []
-    acc[catId].push({ ...item, _idx: idx })
-    return acc
-  }, {})
+  const grouped = items
+    .filter(item => !search.trim() || item.name.toLowerCase().includes(search.trim().toLowerCase()))
+    .reduce((acc, item, _, arr) => {
+      // idx must refer to original items array for delete
+      const catId = item.categoryId
+      if (!acc[catId]) acc[catId] = []
+      acc[catId].push({ ...item, _idx: items.indexOf(item) })
+      return acc
+    }, {})
 
   return (
     <Box>
@@ -554,7 +558,18 @@ function DefaultListEditor({ list, customCategories, onBack, onListUpdated }) {
       </Button>
 
       {Object.keys(grouped).length === 0 && (
-        <Alert severity="info">Nessun articolo. Aggiungine uno!</Alert>
+        <Alert severity="info">{search.trim() ? `Nessun articolo trovato per "${search.trim()}".` : 'Nessun articolo. Aggiungine uno!'}</Alert>
+      )}
+
+      {items.length > 0 && (
+        <TextField
+          size="small"
+          fullWidth
+          placeholder="🔍 Cerca articolo..."
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          sx={{ mb: 2 }}
+        />
       )}
 
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
